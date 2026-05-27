@@ -18,7 +18,7 @@ struct MainTabView: View {
                 case 0:
                     RecollectScreen()
                 case 1:
-                    DummyScreen(title: "Camera Screen", systemImage: "camera.aperture")
+                    CollectionScreen()
                 case 2:
                     RoadmapScreen()
                 default:
@@ -26,7 +26,7 @@ struct MainTabView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
+
             CustomTabBar(selectedTab: $selectedTab)
         }
         .background(Color(.systemBackground))
