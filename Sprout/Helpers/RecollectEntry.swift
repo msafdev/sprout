@@ -2,43 +2,130 @@
 //  RecollectEntry.swift
 //  Sprout
 //
-//  Created by Salman Alfarisi on 25/05/26.
-//
 
 import SwiftUI
 
-struct RecollectEntry: Identifiable, Codable {
+struct RecollectEntry: Identifiable {
     var id: UUID = UUID()
     var date: Date
     var items: [EntryItem]
-    
+
     // Helper properties mapped to first item for calendar grid preview
     var count: Int { items.count }
     var imageName: String { items.first?.imageName ?? "placehold-1" }
     var bgGradientStart: String { items.first?.bgGradientStart ?? "#FF5E62" }
     var bgGradientEnd: String { items.first?.bgGradientEnd ?? "#FF9966" }
-    
+
     var startColor: Color {
         Color.fromHex(bgGradientStart)
     }
-    
+
     var endColor: Color {
         Color.fromHex(bgGradientEnd)
     }
+
+    init(date: Date, items: [EntryItem]) {
+        self.id = UUID()
+        self.date = date
+        self.items = items
+    }
 }
 
-// Helper to convert Hex to Color
+struct EntryItem: Identifiable, Codable {
+    var id: UUID = UUID()
+
+    // Connects recollection item back to the real lesson/milestone data.
+    var milestoneID: UUID
+
+    var imageName: String
+    var title: String
+    var description: String
+
+    var photoData: Data?
+    var feelingScore: Int?
+
+    var bgGradientStart: String
+    var bgGradientEnd: String
+
+    init(
+        milestoneID: UUID = UUID(),
+        imageName: String,
+        title: String,
+        description: String,
+        photoData: Data? = nil,
+        feelingScore: Int? = nil,
+        bgGradientStart: String,
+        bgGradientEnd: String
+    ) {
+        self.id = milestoneID
+        self.milestoneID = milestoneID
+        self.imageName = imageName
+        self.title = title
+        self.description = description
+        self.photoData = photoData
+        self.feelingScore = feelingScore
+        self.bgGradientStart = bgGradientStart
+        self.bgGradientEnd = bgGradientEnd
+    }
+
+    init(milestone: Milestone) {
+        self.id = milestone.id
+        self.milestoneID = milestone.id
+        self.imageName = "placehold-1"
+        self.title = milestone.title
+        self.description = milestone.explanation
+        self.photoData = milestone.photoData
+        self.feelingScore = milestone.feelingScore
+        self.bgGradientStart = milestone.roadmap?.colorHex ?? "#A5A827"
+        self.bgGradientEnd = "#DDF5FF"
+    }
+}
+
+// MARK: - Recollection Builder
+
+struct RecollectionBuilder {
+    static func entries(from roadmaps: [Roadmap], calendar: Calendar = .current) -> [RecollectEntry] {
+        let milestones = roadmaps.flatMap { $0.milestones }
+        return entries(from: milestones, calendar: calendar)
+    }
+
+    static func entries(from milestones: [Milestone], calendar: Calendar = .current) -> [RecollectEntry] {
+        let completedMilestones = milestones
+            .filter { $0.isCompletedForProgress }
+            .sorted {
+                let firstDate = $0.completedAt ?? $0.createdAt
+                let secondDate = $1.completedAt ?? $1.createdAt
+                return firstDate > secondDate
+            }
+
+        let groupedByDay = Dictionary(grouping: completedMilestones) { milestone in
+            calendar.startOfDay(for: milestone.completedAt ?? milestone.createdAt)
+        }
+
+        return groupedByDay
+            .map { date, milestones in
+                let items = milestones.map { EntryItem(milestone: $0) }
+                return RecollectEntry(date: date, items: items)
+            }
+            .sorted { $0.date > $1.date }
+    }
+}
+
+// MARK: - Helper to convert Hex to Color
+
 extension Color {
     static func fromHex(_ hex: String) -> Color {
         var cleanHex = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+
         if cleanHex.hasPrefix("#") {
             cleanHex.removeFirst()
         }
-        
+
         var rgb: UInt64 = 0
         guard Scanner(string: cleanHex).scanHexInt64(&rgb) else { return .gray }
-        
+
         let r, g, b, a: Double
+
         if cleanHex.count == 6 {
             r = Double((rgb >> 16) & 0xFF) / 255.0
             g = Double((rgb >> 8) & 0xFF) / 255.0
@@ -52,53 +139,37 @@ extension Color {
         } else {
             return .gray
         }
-        
+
         return Color(.sRGB, red: r, green: g, blue: b, opacity: a)
     }
 }
 
-struct EntryItem: Identifiable, Codable {
-    var id: UUID = UUID()
-    var imageName: String
-    var title: String
-    var description: String
-    var bgGradientStart: String
-    var bgGradientEnd: String
-}
-
-// Generate Mock Data
 struct MockDataGenerator {
     static func getMockEntries() -> [RecollectEntry] {
         let calendar = Calendar.current
         let today = Date()
-        
+
         func dateFromDaysAgo(_ days: Int) -> Date {
             calendar.date(byAdding: .day, value: -days, to: today) ?? today
         }
-        
+
         return [
-            // Current month entries (May 2026)
             RecollectEntry(
-                date: dateFromDaysAgo(2), // 2 days ago
+                date: dateFromDaysAgo(2),
                 items: [
                     EntryItem(
+                        milestoneID: UUID(),
                         imageName: "placehold-1",
-                        title: "Learning Swift UI",
-                        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis rutrum porta condimentum. Suspendisse potenti.",
-                        bgGradientStart: "#FF5E62",
-                        bgGradientEnd: "#FF9966"
+                        title: "Learning SwiftUI",
+                        description: "Practiced SwiftUI layout, navigation, and reusable components.",
+                        bgGradientStart: "#A5A827",
+                        bgGradientEnd: "#DDF5FF"
                     ),
                     EntryItem(
+                        milestoneID: UUID(),
                         imageName: "placehold-2",
-                        title: "Morning Coffee Brew",
-                        description: "Tried a new Ethiopian light roast coffee today. Floral notes with high acidity.",
-                        bgGradientStart: "#8A2387",
-                        bgGradientEnd: "#E94057"
-                    ),
-                    EntryItem(
-                        imageName: "placehold-3",
-                        title: "Desk Setup Progress",
-                        description: "Organized the cables and set up the new mechanical keyboard.",
+                        title: "SwiftData Relationships",
+                        description: "Learned how Roadmap and Milestone connect using SwiftData relationships.",
                         bgGradientStart: "#12C2E9",
                         bgGradientEnd: "#C471ED"
                     )
@@ -108,127 +179,12 @@ struct MockDataGenerator {
                 date: dateFromDaysAgo(5),
                 items: [
                     EntryItem(
-                        imageName: "placehold-2",
-                        title: "Evening Stroll",
-                        description: "Walked around the local park. The weather was perfect and the sunset was beautiful.",
-                        bgGradientStart: "#8A2387",
-                        bgGradientEnd: "#E94057"
-                    )
-                ]
-            ),
-            RecollectEntry(
-                date: dateFromDaysAgo(10),
-                items: [
-                    EntryItem(
+                        milestoneID: UUID(),
                         imageName: "placehold-3",
-                        title: "Coding Session",
-                        description: "Deep dive into SwiftData relationships and custom animations.",
-                        bgGradientStart: "#12C2E9",
-                        bgGradientEnd: "#C471ED"
-                    ),
-                    EntryItem(
-                        imageName: "placehold-1",
-                        title: "Reading Time",
-                        description: "Read another chapter of 'Atomic Habits'. Focus on visual cues.",
+                        title: "App Design Review",
+                        description: "Improved the collection card layout and progress logic.",
                         bgGradientStart: "#FF5E62",
                         bgGradientEnd: "#FF9966"
-                    )
-                ]
-            ),
-            
-            // Last month entries (April 2026)
-            RecollectEntry(
-                date: dateFromDaysAgo(25),
-                items: [
-                    EntryItem(
-                        imageName: "placehold-1",
-                        title: "Healthy Lunch Prep",
-                        description: "Made an avocado chicken salad with homemade lime dressing.",
-                        bgGradientStart: "#11998E",
-                        bgGradientEnd: "#38EF7D"
-                    )
-                ]
-            ),
-            RecollectEntry(
-                date: dateFromDaysAgo(32),
-                items: [
-                    EntryItem(
-                        imageName: "placehold-2",
-                        title: "Guitar Practice",
-                        description: "Learned the chord transitions for a new classical song.",
-                        bgGradientStart: "#FC466B",
-                        bgGradientEnd: "#3F5EFB"
-                    ),
-                    EntryItem(
-                        imageName: "placehold-3",
-                        title: "Drawing Session",
-                        description: "Sketching quick poses. Trying to improve gesture drawing speed.",
-                        bgGradientStart: "#00F2FE",
-                        bgGradientEnd: "#4FACFE"
-                    ),
-                    EntryItem(
-                        imageName: "placehold-1",
-                        title: "Running Routine",
-                        description: "Ran 5km. Better pace than last week. Feeling energized.",
-                        bgGradientStart: "#FF5E62",
-                        bgGradientEnd: "#FF9966"
-                    )
-                ]
-            ),
-            RecollectEntry(
-                date: dateFromDaysAgo(40),
-                items: [
-                    EntryItem(
-                        imageName: "placehold-3",
-                        title: "New Plant Setup",
-                        description: "Repotted the monstera deliciosa. It's growing super fast!",
-                        bgGradientStart: "#00F2FE",
-                        bgGradientEnd: "#4FACFE"
-                    )
-                ]
-            ),
-            
-            // 2 Months ago entries (March 2026)
-            RecollectEntry(
-                date: dateFromDaysAgo(60),
-                items: [
-                    EntryItem(
-                        imageName: "placehold-1",
-                        title: "Bicycle Ride",
-                        description: "Rode along the river trail. Caught a glimpse of some ducks.",
-                        bgGradientStart: "#FF0844",
-                        bgGradientEnd: "#FFB199"
-                    )
-                ]
-            ),
-            RecollectEntry(
-                date: dateFromDaysAgo(72),
-                items: [
-                    EntryItem(
-                        imageName: "placehold-2",
-                        title: "Watercolors Practice",
-                        description: "Painting a landscape watercolor scene. Blending skies.",
-                        bgGradientStart: "#F12711",
-                        bgGradientEnd: "#F5AF19"
-                    ),
-                    EntryItem(
-                        imageName: "placehold-3",
-                        title: "Cooking Experiment",
-                        description: "Tried baking sourdough bread. Crust was perfect but inside was a bit dense.",
-                        bgGradientStart: "#9AD0C2",
-                        bgGradientEnd: "#2D9596"
-                    )
-                ]
-            ),
-            RecollectEntry(
-                date: dateFromDaysAgo(80),
-                items: [
-                    EntryItem(
-                        imageName: "placehold-3",
-                        title: "Spring Cleaning",
-                        description: "Decluttered the closet and organized bookshelves.",
-                        bgGradientStart: "#9AD0C2",
-                        bgGradientEnd: "#2D9596"
                     )
                 ]
             )

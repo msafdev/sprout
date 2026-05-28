@@ -328,7 +328,7 @@ struct RecollectDetailSheet: View {
         if selectedItemIndex < entry.items.count {
             return entry.items[selectedItemIndex]
         }
-        return entry.items.first ?? EntryItem(imageName: "placehold-1", title: "", description: "", bgGradientStart: "", bgGradientEnd: "")
+        return entry.items.first ?? EntryItem( imageName: "placehold-1", title: "", description: "", bgGradientStart: "", bgGradientEnd: "")
     }
     
     // Returns thumbnail size based on entry count
