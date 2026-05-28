@@ -53,3 +53,9 @@ struct CollapsibleCollectionHeader: View {
         }
     }
 }
+
+#Preview {
+    CollapsibleCollectionHeader(collectionCount: 3, entryCount: 3, sproutedCount: 3, progress: 0.8, addAction: {
+        print("addAction successfully tapped in preview! 🎉")
+    })
+}

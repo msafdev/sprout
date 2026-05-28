@@ -164,8 +164,14 @@ struct CameraPlaceholderView: View {
     }
 }
 
-
 #Preview {
-    RootView()
-        .modelContainer(for: [Roadmap.self, Milestone.self], inMemory: true)
+    // Create a single shared preview container explicitly
+    let schema = Schema([Roadmap.self, Milestone.self])
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: schema, configurations: [config])
+    
+    return RootView()
+        .modelContainer(container)
+        // Explicitly inject the context into the environment as well to satisfy aggressive subview lifecycles
+        .environment(\.modelContext, container.mainContext)
 }

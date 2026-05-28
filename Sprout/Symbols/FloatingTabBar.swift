@@ -139,6 +139,24 @@ struct TabButton: View {
 }
 
 #Preview {
+    // 1. Create a dynamic state that updates when tabs are tapped
+    @Previewable @State var currentTab: AppTab = .recollection
+    
+    // 2. Position it at the bottom of the screen with a background to mirror real usage
+    VStack {
+        Spacer()
+        
+        FloatingTabBar(
+            selectedTab: $currentTab,
+            cameraAction: {
+                print("Camera shutter button tapped! 📸")
+            }
+        )
+    }
+    .background(Color(.systemGroupedBackground)) // Makes the white notched shape stand out
+}
+
+#Preview {
     RootView()
         .modelContainer(for: [Roadmap.self, Milestone.self], inMemory: true)
 }
