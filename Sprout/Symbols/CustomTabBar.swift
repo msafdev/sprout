@@ -34,7 +34,7 @@ struct CustomTabBar: View {
     private func tabSystemImage(for index: Int) -> String {
         switch index {
         case 0: return "calendar"
-        case 1: return "camera.aperture"
+        case 1: return "square.stack.3d.up"
         case 2: return "point.topleft.filled.down.to.point.bottomright.curvepath"
         case 3: return "person.fill"
         default: return ""
