@@ -15,6 +15,14 @@ struct RoadmapScreen: View {
     @State private var showingAddSheet = false
     @State private var roadmapToEdit: Roadmap?
     
+    var totalEntries: Int {
+        roadmaps.reduce(0) { $0 + $1.milestones.count }
+    }
+    
+    var completedEntries: Int {
+        roadmaps.reduce(0) { $0 + $1.milestones.filter { $0.isCompleted }.count }
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -25,7 +33,7 @@ struct RoadmapScreen: View {
                     // Header Area
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("My Roadmaps")
+                            Text("Roadmap")
                                 .font(.system(size: 34, weight: .bold))
                                 .foregroundColor(.primary)
                             Text("Track your progress toward your dreams")
@@ -37,32 +45,54 @@ struct RoadmapScreen: View {
                         Button(action: { showingAddSheet = true }) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 38))
-                                .foregroundColor(Color(red: 76/255, green: 175/255, blue: 80/255))
+                                .foregroundColor(Color(red: 150/255, green: 180/255, blue: 80/255))
                         }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
                     
+                    // Statistics Bar
+                    HStack(spacing: 16) {
+                        MascotStatView()
+                            .frame(width: 82, height: 82)
+                        
+                        VStack(spacing: 0) {
+                            HStack(spacing: 0) {
+                                StatItemView(label: "Collection", value: "\(roadmaps.count)")
+                                StatItemView(label: "Entries", value: "\(totalEntries)")
+                                StatItemView(label: "Sprouted", value: "\(completedEntries)")
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .background(Color(red: 150/255, green: 180/255, blue: 80/255))
+                    .cornerRadius(24)
+                    .padding(.horizontal, 20)
+                    
                     if roadmaps.isEmpty {
                         VStack {
                             Spacer()
                             ContentUnavailableView(
-                                "No Roadmaps Yet",
+                                "No Roadmap Yet",
                                 systemImage: "target",
-                                description: Text("Add a roadmap or goal to start tracking your journey.")
+                                description: Text("Add a collection to start tracking your journey.")
                             )
                             Spacer()
                         }
                     } else {
                         ScrollView {
-                            LazyVStack(spacing: 16) {
-                                ForEach(roadmaps) { roadmap in
-                                    NavigationLink(value: roadmap) {
-                                        RoadmapCardView(roadmap: roadmap, onEdit: {
-                                            roadmapToEdit = roadmap
-                                        })
+                            VStack(spacing: 20) {
+                                // Grid layout
+                                let columns = [GridItem(.flexible()), GridItem(.flexible())]
+                                LazyVGrid(columns: columns, spacing: 20) {
+                                    ForEach(roadmaps) { roadmap in
+                                        NavigationLink(value: roadmap) {
+                                            RoadmapCardView(roadmap: roadmap, onEdit: {
+                                                roadmapToEdit = roadmap
+                                            })
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
-                                    .buttonStyle(PlainButtonStyle())
                                 }
                             }
                             .padding(.horizontal, 20)
@@ -89,46 +119,68 @@ struct RoadmapScreen: View {
     private func seedInitialRoadmapsIfNeeded() {
         guard roadmaps.isEmpty else { return }
         
-        let r1 = Roadmap(
-            title: "I want to be a photographer",
-            goalDescription: "Master manual modes, lighting, composition, and build a digital portfolio.",
-            colorHex: "#FF9500" // Orange
+        let roadmap = Roadmap(
+            title: "Become a Confident Visual Storyteller",
+            goalDescription: "Capture everyday scenes with intention, review results, and refine every shot.",
+            colorHex: "#34C759"
         )
-        r1.milestones = [
-            Milestone(title: "Understand exposure triangle (ISO, Shutter, Aperture)", isCompleted: true),
-            Milestone(title: "Practice composition rules (Rule of Thirds, Leading lines)", isCompleted: true),
-            Milestone(title: "Perform a portrait photoshoot with natural light", isCompleted: false),
-            Milestone(title: "Publish portfolio website with 15 selected photos", isCompleted: false)
+        roadmap.milestones = [
+            Milestone(title: "Assess current camera skills and setup"),
+            Milestone(title: "Practice three photo compositions with available light"),
+            Milestone(title: "Review selected shots and identify improvement areas")
         ]
         
-        let r2 = Roadmap(
-            title: "I wanna learn english",
-            goalDescription: "Reach C1 fluency, feel confident speaking in public, and read novels.",
-            colorHex: "#007AFF" // Blue
-        )
-        r2.milestones = [
-            Milestone(title: "Read 1 English article or news post daily", isCompleted: true),
-            Milestone(title: "Watch movies in English without local subtitles", isCompleted: false),
-            Milestone(title: "Attend a conversational English meetup", isCompleted: false),
-            Milestone(title: "Complete 30-day vocabulary challenge", isCompleted: true)
-        ]
-        
-        let r3 = Roadmap(
-            title: "Learn SwiftUI Development",
-            goalDescription: "Build and launch 3 premium native apps in the App Store.",
-            colorHex: "#34C759" // Green
-        )
-        r3.milestones = [
-            Milestone(title: "Complete basic layout tutorials", isCompleted: true),
-            Milestone(title: "Implement SwiftData model persistence", isCompleted: true),
-            Milestone(title: "Design custom animated tab bars", isCompleted: true),
-            Milestone(title: "Submit first app to App Store Connect", isCompleted: false)
-        ]
-        
-        modelContext.insert(r1)
-        modelContext.insert(r2)
-        modelContext.insert(r3)
+        modelContext.insert(roadmap)
         try? modelContext.save()
+    }
+}
+
+struct StatItemView: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.white)
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.8))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+    }
+}
+
+struct MascotStatView: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22)
+                .fill(Color.white.opacity(0.2))
+            
+            ZStack(alignment: .topTrailing) {
+                Ellipse()
+                    .fill(Color(red: 139/255, green: 165/255, blue: 67/255))
+                    .frame(width: 58, height: 62)
+                    .overlay(
+                        VStack(spacing: 2) {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
+                                Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
+                            }
+                            Capsule().stroke(Color.black.opacity(0.8), lineWidth: 1.5).frame(width: 6, height: 2)
+                        }
+                        .offset(y: 4)
+                    )
+                
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(red: 139/255, green: 165/255, blue: 67/255))
+                    .rotationEffect(.degrees(-35))
+                    .offset(x: 5, y: -20)
+            }
+        }
     }
 }
 
@@ -156,32 +208,27 @@ struct RoadmapCardView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Color tag
             HStack(alignment: .top) {
-                // Category Color Tag
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 4)
                     .fill(themeColor)
-                    .frame(width: 6, height: 28)
+                    .frame(width: 4, height: 16)
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(roadmap.title)
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
-                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
                     
-                    if !roadmap.goalDescription.isEmpty {
-                        Text(roadmap.goalDescription)
-                            .font(.caption)
-                            .foregroundColor(.primary.opacity(0.8))
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
+                    Text("\(totalCount) Entries")
+                        .font(.caption)
+                        .foregroundColor(.primary.opacity(0.7))
                 }
                 
                 Spacer()
                 
-                // Edit & Delete Menu
                 Menu {
                     Button(action: onEdit) {
                         Label("Edit", systemImage: "pencil")
@@ -192,49 +239,42 @@ struct RoadmapCardView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.primary.opacity(0.8).opacity(0.8))
-                        .padding(8)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary.opacity(0.6))
                 }
             }
             
-            // Progress Section
+            // Progress
             VStack(spacing: 6) {
                 HStack {
-                    Text("\(completedCount) of \(totalCount) milestones")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary.opacity(0.8))
+                    Text("\(completedCount) of \(totalCount)")
+                        .font(.caption2)
+                        .foregroundColor(.primary.opacity(0.7))
                     
                     Spacer()
                     
                     Text("\(Int(progress * 100))%")
-                        .font(.caption)
+                        .font(.caption2)
                         .fontWeight(.bold)
                         .foregroundColor(themeColor)
                 }
                 
-                // Progress Bar
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.primary.opacity(0.8).opacity(0.15))
-                            .frame(height: 8)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.primary.opacity(0.1))
                         
-                        RoundedRectangle(cornerRadius: 4)
+                        RoundedRectangle(cornerRadius: 3)
                             .fill(themeColor)
-                            .frame(width: geo.size.width * CGFloat(progress), height: 8)
+                            .frame(width: geo.size.width * CGFloat(progress))
                     }
                 }
-                .frame(height: 8)
+                .frame(height: 6)
             }
         }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(.systemGray).opacity(0.1))
-                .shadow(color: Color.primary.opacity(0.04), radius: 8, x: 0, y: 4)
-        )
+        .padding(12)
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
     }
     
     private func deleteCard() {
@@ -253,6 +293,7 @@ struct RoadmapDetailView: View {
     
     @State private var showingEditSheet = false
     @State private var newMilestoneTitle = ""
+    @State private var showImageRequiredAlert = false
     
     var themeColor: Color {
         Color.fromHex(roadmap.colorHex)
@@ -344,7 +385,7 @@ struct RoadmapDetailView: View {
                         .shadow(color: Color.primary.opacity(0.04), radius: 10, x: 0, y: 6)
                 )
                 
-                // Milestones checklist section
+                // Entries section
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Milestones Checklist")
                         .font(.title3)
@@ -369,18 +410,21 @@ struct RoadmapDetailView: View {
                     }
                     
                     if roadmap.milestones.isEmpty {
-                        Text("No milestones defined yet. Add one above!")
+                        Text("No entries defined yet. Add one above!")
                             .font(.subheadline)
                             .foregroundColor(.primary.opacity(0.8))
                             .padding(.vertical, 10)
                     } else {
                         VStack(spacing: 12) {
                             ForEach(roadmap.milestones) { milestone in
-                                MilestoneRowView(milestone: milestone, themeColor: themeColor) {
-                                    toggleMilestone(milestone)
-                                } onDelete: {
-                                    deleteMilestone(milestone)
+                                NavigationLink(value: milestone) {
+                                    EntryRowView(milestone: milestone, themeColor: themeColor) {
+                                        toggleMilestone(milestone)
+                                    } onDelete: {
+                                        deleteMilestone(milestone)
+                                    }
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                     }
@@ -390,8 +434,16 @@ struct RoadmapDetailView: View {
         }
         .background(Color.white)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(for: Milestone.self) { milestone in
+            EntryDetailView(entry: milestone)
+        }
         .sheet(isPresented: $showingEditSheet) {
             AddEditRoadmapSheet(roadmap: roadmap)
+        }
+        .alert("Photo required", isPresented: $showImageRequiredAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Add a photo in the entry detail before marking this lesson as finished.")
         }
     }
     
@@ -410,7 +462,16 @@ struct RoadmapDetailView: View {
     
     private func toggleMilestone(_ milestone: Milestone) {
         withAnimation {
-            milestone.isCompleted.toggle()
+            if milestone.isCompleted {
+                milestone.isCompleted = false
+                milestone.completedAt = nil
+            } else if milestone.imageData != nil {
+                milestone.isCompleted = true
+                milestone.completedAt = Date()
+            } else {
+                showImageRequiredAlert = true
+                return
+            }
             try? modelContext.save()
         }
     }
@@ -424,27 +485,50 @@ struct RoadmapDetailView: View {
     }
 }
 
-struct MilestoneRowView: View {
+struct EntryRowView: View {
     @Bindable var milestone: Milestone
     let themeColor: Color
     let onToggle: () -> Void
     let onDelete: () -> Void
     
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Button(action: onToggle) {
                 Image(systemName: milestone.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22))
+                    .font(.system(size: 20))
                     .foregroundColor(milestone.isCompleted ? themeColor : .primary.opacity(0.8).opacity(0.6))
             }
+            .disabled(!milestone.isCompleted && milestone.imageData == nil)
             
-            Text(milestone.title)
-                .font(.subheadline)
-                .strikethrough(milestone.isCompleted)
-                .foregroundColor(milestone.isCompleted ? .primary.opacity(0.8) : .primary)
-                .multilineTextAlignment(.leading)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(milestone.title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .strikethrough(milestone.isCompleted)
+                    .foregroundColor(milestone.isCompleted ? .primary.opacity(0.8) : .primary)
+                    .multilineTextAlignment(.leading)
+                
+                if !milestone.content.isEmpty {
+                    Text(milestone.content)
+                        .font(.caption)
+                        .foregroundColor(.primary.opacity(0.6))
+                        .lineLimit(1)
+                }
+                if !milestone.isCompleted && milestone.imageData == nil {
+                    Text("Photo required to finish")
+                        .font(.caption2)
+                        .foregroundColor(.red)
+                        .lineLimit(1)
+                }
+            }
             
             Spacer()
+            
+            // Emotion level display
+            if milestone.emotionLevel > 0 {
+                Text(emotionEmoji(for: milestone.emotionLevel))
+                    .font(.system(size: 20))
+            }
             
             Button(action: onDelete) {
                 Image(systemName: "xmark")
@@ -456,9 +540,13 @@ struct MilestoneRowView: View {
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: Color.primary.opacity(0.02), radius: 4, x: 0, y: 2)
+                .fill(Color(.systemGray6))
         )
+    }
+    
+    private func emotionEmoji(for level: Int) -> String {
+        let emojis = ["😢", "😕", "😐", "🙂", "😄"]
+        return emojis[level - 1]
     }
 }
 
@@ -553,5 +641,5 @@ struct AddEditRoadmapSheet: View {
 
 #Preview {
     RoadmapScreen()
-        .modelContainer(for: Roadmap.self, inMemory: true)
+        .modelContainer(for: [Roadmap.self, Milestone.self], inMemory: true)
 }

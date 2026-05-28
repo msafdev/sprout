@@ -6,23 +6,35 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct RecollectScreen: View {
-    @State private var entries: [RecollectEntry] = MockDataGenerator.getMockEntries()
+    @Query(sort: \Milestone.createdAt, order: .reverse) private var milestones: [Milestone]
     @State private var showingProfileSheet = false
-    @State private var selectedEntry: RecollectEntry? = nil
+    @State private var selectedDaySelection: DaySelection? = nil
     
-    // Insights stats
+    private var completedMilestones: [Milestone] {
+        milestones
+            .filter { $0.isCompleted && $0.completedAt != nil }
+            .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
+    }
+    
     var weekCount: Int {
         let calendar = Calendar.current
         let oneWeekAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        return entries.filter { $0.date >= oneWeekAgo }.reduce(0) { $0 + $1.count }
+        return completedMilestones.filter { milestone in
+            guard let completedAt = milestone.completedAt else { return false }
+            return completedAt >= oneWeekAgo
+        }.count
     }
     
     var monthCount: Int {
         let calendar = Calendar.current
         let oneMonthAgo = calendar.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        return entries.filter { $0.date >= oneMonthAgo }.reduce(0) { $0 + $1.count }
+        return completedMilestones.filter { milestone in
+            guard let completedAt = milestone.completedAt else { return false }
+            return completedAt >= oneMonthAgo
+        }.count
     }
     
     var lastThreeMonths: [Date] {
@@ -76,13 +88,15 @@ struct RecollectScreen: View {
                 .padding(.vertical, 22)
                 .background(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color(red: 76/255, green: 175/255, blue: 80/255))
+                        .fill(Color(red: 150/255, green: 180/255, blue: 80/255))
                 )
                 
                 VStack(spacing: 32) {
                     ForEach(lastThreeMonths, id: \.self) { monthDate in
-                        MonthCalendarView(monthDate: monthDate, entries: entries) { entry in
-                            selectedEntry = entry
+                        MonthCalendarView(monthDate: monthDate, milestones: completedMilestones) { dayMilestones in
+                            if !dayMilestones.isEmpty {
+                                selectedDaySelection = DaySelection(date: dayMilestones.first?.completedAt ?? Date(), milestones: dayMilestones)
+                            }
                         }
                     }
                 }
@@ -90,14 +104,20 @@ struct RecollectScreen: View {
             }
             .padding(.horizontal, 20)
         }
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .sheet(isPresented: $showingProfileSheet) {
             ProfileSheetView()
         }
-        .sheet(item: $selectedEntry) { entry in
-            RecollectDetailSheet(entry: entry, allEntries: entries)
+        .sheet(item: $selectedDaySelection) { selection in
+            RecollectDetailSheet(date: selection.date, milestones: selection.milestones)
         }
     }
+}
+
+struct DaySelection: Identifiable {
+    let id = UUID()
+    let date: Date
+    let milestones: [Milestone]
 }
 
 struct ProfileSheetView: View {
@@ -159,8 +179,8 @@ struct ProfileSheetView: View {
 
 struct MonthCalendarView: View {
     let monthDate: Date
-    let entries: [RecollectEntry]
-    let onSelectEntry: (RecollectEntry) -> Void
+    let milestones: [Milestone]
+    let onSelectDay: ([Milestone]) -> Void
     
     private let calendar = Calendar.current
     private let weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
@@ -173,10 +193,11 @@ struct MonthCalendarView: View {
     
     var totalEntriesInMonth: Int {
         let components = calendar.dateComponents([.year, .month], from: monthDate)
-        return entries.filter { entry in
-            let entryComponents = calendar.dateComponents([.year, .month], from: entry.date)
+        return milestones.filter { milestone in
+            guard let completedAt = milestone.completedAt else { return false }
+            let entryComponents = calendar.dateComponents([.year, .month], from: completedAt)
             return entryComponents.year == components.year && entryComponents.month == components.month
-        }.reduce(0) { $0 + $1.count }
+        }.count
     }
     
     var daysInMonth: Int {
@@ -223,12 +244,10 @@ struct MonthCalendarView: View {
                 
                 ForEach(1...daysInMonth, id: \.self) { day in
                     let date = dateForDay(day)
-                    let entry = entryForDate(date)
+                    let dateMilestones = milestonesForDate(date)
                     
-                    CalendarDayCell(day: day, isToday: calendar.isDateInToday(date), entry: entry) {
-                        if let entry = entry {
-                            onSelectEntry(entry)
-                        }
+                    CalendarDayCell(day: day, isToday: calendar.isDateInToday(date), milestones: dateMilestones) {
+                        onSelectDay(dateMilestones)
                     }
                 }
             }
@@ -241,9 +260,10 @@ struct MonthCalendarView: View {
         return calendar.date(from: components) ?? Date()
     }
     
-    private func entryForDate(_ date: Date) -> RecollectEntry? {
-        entries.first { entry in
-            calendar.isDate(entry.date, inSameDayAs: date)
+    private func milestonesForDate(_ date: Date) -> [Milestone] {
+        milestones.filter { milestone in
+            guard let completedAt = milestone.completedAt else { return false }
+            return calendar.isDate(completedAt, inSameDayAs: date)
         }
     }
 }
@@ -251,41 +271,45 @@ struct MonthCalendarView: View {
 struct CalendarDayCell: View {
     let day: Int
     let isToday: Bool
-    let entry: RecollectEntry?
+    let milestones: [Milestone]
     let onSelect: () -> Void
+    
+    private var image: Image? {
+        guard let data = milestones.first?.imageData,
+              let uiImage = UIImage(data: data) else { return nil }
+        return Image(uiImage: uiImage)
+    }
     
     var body: some View {
         ZStack {
-            if let entry = entry {
+            if !milestones.isEmpty {
                 Button(action: onSelect) {
                     ZStack(alignment: .topTrailing) {
-                        Image(entry.imageName)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                            .aspectRatio(1, contentMode: .fit)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(LinearGradient(
-                                        colors: [entry.startColor, entry.endColor],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ))
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        if let image {
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                                .aspectRatio(1, contentMode: .fit)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        } else {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.gray.opacity(0.15))
+                                .aspectRatio(1, contentMode: .fit)
+                        }
                         
                         Text("\(day)")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(Color.white)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         
-                        Text("\(entry.count)")
+                        Text("\(milestones.count)")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
                             .padding(4)
                             .background(
                                 Circle()
-                                    .fill(Color(red: 76/255, green: 175/255, blue: 80/255))
+                                    .fill(Color(red: 150/255, green: 180/255, blue: 80/255))
                             )
                             .offset(x: 5, y: -5)
                     }
@@ -295,12 +319,12 @@ struct CalendarDayCell: View {
                 ZStack {
                     if isToday {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(red: 76/255, green: 175/255, blue: 80/255).opacity(0.18))
+                            .fill(Color(red: 150/255, green: 180/255, blue: 80/255).opacity(0.18))
                             .aspectRatio(1, contentMode: .fit)
                         
                         Text("\(day)")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 76/255, green: 175/255, blue: 80/255))
+                            .foregroundColor(Color(red: 140/255, green: 200/255, blue: 70/255))
                     } else {
                         Text("\(day)")
                             .font(.system(size: 16, weight: .regular))
@@ -316,22 +340,34 @@ struct CalendarDayCell: View {
 
 // MARK: - Detail Sheet View
 struct RecollectDetailSheet: View {
-    @State var entry: RecollectEntry
-    let allEntries: [RecollectEntry]
-    
-    @State private var selectedItemIndex = 0
+    let date: Date
+    let milestones: [Milestone]
+    @State private var selectedIndex = 0
     @Environment(\.dismiss) private var dismiss
-    
     private let calendar = Calendar.current
     
-    var activeItem: EntryItem {
-        if selectedItemIndex < entry.items.count {
-            return entry.items[selectedItemIndex]
-        }
-        return entry.items.first ?? EntryItem(imageName: "placehold-1", title: "", description: "", bgGradientStart: "", bgGradientEnd: "")
+    private var activeMilestone: Milestone? {
+        guard !milestones.isEmpty else { return nil }
+        let safeIndex = min(max(selectedIndex, 0), milestones.count - 1)
+        return milestones[safeIndex]
     }
     
-    // Returns thumbnail size based on entry count
+    private var formattedDate: String {
+        PresentationHelpers.formattedDateOrdinal(date)
+    }
+    
+    private var emotionText: String {
+        guard let sentiment = activeMilestone?.emotionLevel else { return "" }
+        switch sentiment {
+        case 1: return "😢"
+        case 2: return "😕"
+        case 3: return "😐"
+        case 4: return "🙂"
+        case 5: return "😄"
+        default: return ""
+        }
+    }
+    
     private func thumbnailSize(for count: Int) -> CGFloat {
         switch count {
         case 1: return 72
@@ -348,75 +384,73 @@ struct RecollectDetailSheet: View {
                 .frame(height: 12)
             
             HStack {
-                Button(action: moveToPreviousEntry) {
+                Button(action: moveToPreviousMilestone) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.black)
                         .frame(width: 36, height: 36)
                         .background(Circle().fill(Color.gray.opacity(0.12)))
                 }
-                .disabled(!hasPreviousEntry)
-                .opacity(hasPreviousEntry ? 1 : 0.3)
+                .disabled(!hasPreviousMilestone)
+                .opacity(hasPreviousMilestone ? 1 : 0.3)
                 
                 Spacer()
                 
                 VStack(spacing: 2) {
-                    Text(formattedDateOrdinal(entry.date))
+                    Text(formattedDate)
                         .font(.headline)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
                     
-                    Text("\(entry.items.count) items")
+                    Text("\(milestones.count) finished lesson\(milestones.count == 1 ? "" : "s")")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
                 
                 Spacer()
                 
-                Button(action: moveToNextEntry) {
+                Button(action: moveToNextMilestone) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.black)
                         .frame(width: 36, height: 36)
                         .background(Circle().fill(Color.gray.opacity(0.12)))
                 }
-                .disabled(!hasNextEntry)
-                .opacity(hasNextEntry ? 1 : 0.3)
+                .disabled(!hasNextMilestone)
+                .opacity(hasNextMilestone ? 1 : 0.3)
             }
             .padding(.horizontal, 24)
             
-            // Image Card Container
             ZStack(alignment: .topLeading) {
-                Image(activeItem.imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 380)
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    .background(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(LinearGradient(
-                                colors: [Color.fromHex(activeItem.bgGradientStart), Color.fromHex(activeItem.bgGradientEnd)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ))
-                    )
+                if let data = activeMilestone?.imageData,
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(4/3, contentMode: .fill)
+                        .frame(maxWidth: .infinity)
+                        .clipped()
+                } else {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(Color.gray.opacity(0.15))
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(4/3, contentMode: .fill)
+                }
                 
                 LinearGradient(
                     colors: [Color.black.opacity(0.65), Color.black.opacity(0.2), Color.clear],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .frame(maxWidth: .infinity)
                 .frame(height: 220)
                 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(activeItem.title)
+                    Text(activeMilestone?.title ?? "Untitled")
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
-                    Text(activeItem.description)
+                    Text(activeMilestone?.content ?? "No details available.")
                         .font(.footnote)
                         .foregroundColor(.white.opacity(0.85))
                         .lineLimit(4)
@@ -427,59 +461,55 @@ struct RecollectDetailSheet: View {
                 VStack {
                     Spacer()
                     HStack {
-                        // Drawing custom sprout/olive mascot
-                        ZStack(alignment: .topTrailing) {
-                            Ellipse()
-                                .fill(Color(red: 139/255, green: 165/255, blue: 67/255))
-                                .frame(width: 46, height: 50)
-                                .overlay(
-                                    VStack(spacing: 2) {
-                                        HStack(spacing: 6) {
-                                            Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
-                                            Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
-                                        }
-                                        Capsule().stroke(Color.black.opacity(0.8), lineWidth: 1.5).frame(width: 6, height: 2)
-                                    }
-                                    .offset(y: 4)
-                                )
-                            
-                            Image(systemName: "leaf.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(Color(red: 139/255, green: 165/255, blue: 67/255))
-                                .rotationEffect(.degrees(-35))
-                                .offset(x: 2, y: -16)
-                        }
-                        .padding(.leading, 16)
-                        .padding(.bottom, 48)
-                        .shadow(color: Color.black.opacity(0.1), radius: 3)
+                        MascotSymbol()
+                            .padding(.leading, 16)
+                            .padding(.bottom, 48)
                         
                         Spacer()
                     }
                 }
             }
-            .padding(.horizontal, 24)
+            .frame(maxWidth: .infinity)
+            .aspectRatio(4/3, contentMode: .fit)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color(.systemGray6))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 5)
+            .padding(.horizontal, 24)
             
-            if entry.items.count > 1 {
-                let tSize = thumbnailSize(for: entry.items.count)
+            if milestones.count > 1 {
+                let tSize = thumbnailSize(for: milestones.count)
                 HStack(spacing: 12) {
-                    ForEach(0..<entry.items.count, id: \.self) { index in
-                        let item = entry.items[index]
+                    ForEach(0..<milestones.count, id: \.self) { index in
+                        let milestone = milestones[index]
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedItemIndex = index
+                                selectedIndex = index
                             }
                         }) {
-                            Image(item.imageName)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: tSize, height: tSize)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(Color(red: 76/255, green: 175/255, blue: 80/255), lineWidth: selectedItemIndex == index ? 3 : 0)
-                                )
-                                .shadow(color: Color.black.opacity(0.06), radius: 3)
+                            if let data = milestone.imageData,
+                               let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: tSize, height: tSize)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(Color(red: 76/255, green: 175/255, blue: 80/255), lineWidth: selectedIndex == index ? 3 : 0)
+                                    )
+                                    .shadow(color: Color.black.opacity(0.06), radius: 3)
+                            } else {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color.gray.opacity(0.15))
+                                    .frame(width: tSize, height: tSize)
+                                    .overlay(
+                                        Image(systemName: "photo")
+                                            .foregroundColor(.gray)
+                                    )
+                            }
                         }
                         .buttonStyle(EmptyTabButtonStyle())
                     }
@@ -488,70 +518,42 @@ struct RecollectDetailSheet: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 10)
             }
+            
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemBackground))
-        .presentationDetents([.fraction(entry.items.count > 1 ? 0.81 : 0.70)])
+        .presentationDetents([.fraction(milestones.count > 1 ? 0.81 : 0.70)])
         .presentationDragIndicator(.visible)
     }
     
-    private var hasPreviousEntry: Bool {
-        let sorted = allEntries.sorted(by: { $0.date < $1.date })
-        if let idx = sorted.firstIndex(where: { calendar.isDate($0.date, inSameDayAs: entry.date) }) {
-            return idx > 0
-        }
-        return false
+    private var hasPreviousMilestone: Bool {
+        selectedIndex > 0
     }
     
-    private var hasNextEntry: Bool {
-        let sorted = allEntries.sorted(by: { $0.date < $1.date })
-        if let idx = sorted.firstIndex(where: { calendar.isDate($0.date, inSameDayAs: entry.date) }) {
-            return idx < sorted.count - 1
-        }
-        return false
+    private var hasNextMilestone: Bool {
+        selectedIndex < milestones.count - 1
     }
     
-    private func moveToPreviousEntry() {
-        let sorted = allEntries.sorted(by: { $0.date < $1.date })
-        if let idx = sorted.firstIndex(where: { calendar.isDate($0.date, inSameDayAs: entry.date) }), idx > 0 {
+    private func moveToPreviousMilestone() {
+        if selectedIndex > 0 {
             withAnimation {
-                entry = sorted[idx - 1]
-                selectedItemIndex = 0
+                selectedIndex -= 1
             }
         }
     }
     
-    private func moveToNextEntry() {
-        let sorted = allEntries.sorted(by: { $0.date < $1.date })
-        if let idx = sorted.firstIndex(where: { calendar.isDate($0.date, inSameDayAs: entry.date) }), idx < sorted.count - 1 {
+    private func moveToNextMilestone() {
+        if selectedIndex < milestones.count - 1 {
             withAnimation {
-                entry = sorted[idx + 1]
-                selectedItemIndex = 0
+                selectedIndex += 1
             }
         }
-    }
-    
-    private func formattedDateOrdinal(_ date: Date) -> String {
-        let day = calendar.component(.day, from: date)
-        let suffix: String
-        if (11...13).contains(day) {
-            suffix = "th"
-        } else {
-            switch day % 10 {
-            case 1: suffix = "st"
-            case 2: suffix = "nd"
-            case 3: suffix = "rd"
-            default: suffix = "th"
-            }
-        }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM d"
-        let monthAndDay = formatter.string(from: date)
-        formatter.dateFormat = "yyyy"
-        let year = formatter.string(from: date)
-        return "\(monthAndDay)\(suffix), \(year)"
     }
 }
 
+
 #Preview {
     RecollectScreen()
+        .modelContainer(for: [Item.self, Roadmap.self, Milestone.self], inMemory: true)
 }

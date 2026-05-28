@@ -30,15 +30,32 @@ final class Roadmap {
 }
 
 @Model
-final class Milestone {
+final class Milestone: Hashable {
     var id: UUID = UUID()
     var title: String = ""
+    var content: String = ""
     var isCompleted: Bool = false
+    var emotionLevel: Int = 0 // 0-5, where 0 is not set
+    var imageData: Data? = nil
+    var createdAt: Date = Date()
+    var completedAt: Date? = nil
     var roadmap: Roadmap?
     
-    init(title: String, isCompleted: Bool = false) {
+    init(title: String, isCompleted: Bool = false, content: String = "", emotionLevel: Int = 0, createdAt: Date = Date(), completedAt: Date? = nil) {
         self.id = UUID()
         self.title = title
+        self.content = content
         self.isCompleted = isCompleted
+        self.emotionLevel = emotionLevel
+        self.createdAt = createdAt
+        self.completedAt = completedAt
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: Milestone, rhs: Milestone) -> Bool {
+        lhs.id == rhs.id
     }
 }
