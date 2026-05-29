@@ -18,7 +18,7 @@ struct MainTabView: View {
                 case 0:
                     RecollectScreen()
                 case 1:
-                    DummyScreen(title: "Camera Screen", systemImage: "camera.aperture")
+                    CameraScreen()
                 case 2:
                     RoadmapScreen()
                 default:
@@ -32,32 +32,4 @@ struct MainTabView: View {
         .background(Color(.systemBackground))
         .ignoresSafeArea(.keyboard)
     }
-}
-
-struct DummyScreen: View {
-    let title: String
-    let systemImage: String
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: systemImage)
-                .font(.system(size: 72))
-                .foregroundColor(.primary.opacity(0.3))
-            
-            Text(title)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.primary.opacity(0.8))
-            
-            Text("This screen is under construction.")
-                .font(.subheadline)
-                .foregroundColor(.primary.opacity(0.8))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-    }
-}
-
-#Preview {
-    MainTabView()
 }
