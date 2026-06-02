@@ -432,7 +432,7 @@ struct EntryView: View {
             parentRoadmap = Roadmap(
                 title: collectionText,
                 goalDescription: goalDescriptionText,
-                colorHex: "#A5A827"
+                colorHex: "#9F9E32"
             )
             modelContext.insert(parentRoadmap)
         }
@@ -476,5 +476,5 @@ struct EntryView: View {
 }
 
 extension Color {
-    static let oliveSprout = Color(red: 140/255, green: 162/255, blue: 64/255)
+    static let oliveSprout = Color.appAccent
 }

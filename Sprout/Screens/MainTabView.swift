@@ -9,7 +9,8 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab: Int = 0
-    
+    @State private var roadmapPath = NavigationPath()
+
     var body: some View {
         Group {
             // Screen Contents
@@ -30,7 +31,7 @@ struct MainTabView: View {
                 CustomTabBar(selectedTab: $selectedTab)
             }
         }
-        .background(Color(.systemBackground))
+        .background(Color.appBackground)
         .ignoresSafeArea(.keyboard)
     }
 }

@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+extension Color {
+    static let appAccent = Color(red: 159/255, green: 158/255, blue: 50/255)
+    static let appBackground = Color(red: 245/255, green: 245/255, blue: 236/255)
+}
+
 struct PresentationHelpers {
     static func detentForItemCount(_ count: Int) -> PresentationDetent {
         return count > 1 ? .fraction(0.81) : .fraction(0.70)
