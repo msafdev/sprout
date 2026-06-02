@@ -27,7 +27,7 @@ struct MainTabView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom) {
-            if selectedTab != 1 {
+            if selectedTab != 1 && !(selectedTab == 2 && !roadmapPath.isEmpty) {
                 CustomTabBar(selectedTab: $selectedTab)
             }
         }
