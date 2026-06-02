@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MascotSymbol: View {
     var size: CGFloat = 46
-    var fillColor: Color = Color(red: 139/255, green: 165/255, blue: 67/255)
+    var fillColor: Color = Color.appAccent
     
     var body: some View {
         ZStack(alignment: .topTrailing) {

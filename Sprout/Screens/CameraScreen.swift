@@ -103,7 +103,7 @@ struct CameraScreen: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 14)
-                        .background(Color.green)
+                        .background(Color.appAccent)
                         .clipShape(Capsule())
                     }
                     

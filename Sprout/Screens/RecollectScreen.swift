@@ -88,7 +88,7 @@ struct RecollectScreen: View {
                 .padding(.vertical, 22)
                 .background(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color(red: 150/255, green: 180/255, blue: 80/255))
+                        .fill(Color.appAccent)
                 )
                 
                 VStack(spacing: 32) {
@@ -104,12 +104,12 @@ struct RecollectScreen: View {
             }
             .padding(.horizontal, 20)
         }
-        .background(Color(.systemBackground))
+        .background(Color.appBackground)
         .sheet(isPresented: $showingProfileSheet) {
             ProfileSheetView()
         }
         .sheet(item: $selectedDaySelection) { selection in
-            RecollectDetailSheet(date: selection.date, milestones: selection.milestones)
+            RecollectDetailSheet(date: selection.date, allMilestones: completedMilestones)
         }
     }
 }
@@ -309,7 +309,7 @@ struct CalendarDayCell: View {
                             .padding(4)
                             .background(
                                 Circle()
-                                    .fill(Color(red: 150/255, green: 180/255, blue: 80/255))
+                                    .fill(Color.appAccent)
                             )
                             .offset(x: 5, y: -5)
                     }
@@ -319,12 +319,12 @@ struct CalendarDayCell: View {
                 ZStack {
                     if isToday {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(red: 150/255, green: 180/255, blue: 80/255).opacity(0.18))
+                            .fill(Color.appAccent.opacity(0.18))
                             .aspectRatio(1, contentMode: .fit)
                         
                         Text("\(day)")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 140/255, green: 200/255, blue: 70/255))
+                            .foregroundColor(Color.appAccent)
                     } else {
                         Text("\(day)")
                             .font(.system(size: 16, weight: .regular))
@@ -340,34 +340,52 @@ struct CalendarDayCell: View {
 
 // MARK: - Detail Sheet View
 struct RecollectDetailSheet: View {
-    let date: Date
-    let milestones: [Milestone]
+    let allMilestones: [Milestone]
+    @State private var currentDate: Date
     @State private var selectedIndex = 0
-    @Environment(\.dismiss) private var dismiss
     private let calendar = Calendar.current
-    
-    private var activeMilestone: Milestone? {
-        guard !milestones.isEmpty else { return nil }
-        let safeIndex = min(max(selectedIndex, 0), milestones.count - 1)
-        return milestones[safeIndex]
+
+    init(date: Date, allMilestones: [Milestone]) {
+        self.allMilestones = allMilestones
+        self._currentDate = State(initialValue: date)
     }
-    
-    private var formattedDate: String {
-        PresentationHelpers.formattedDateOrdinal(date)
+
+    // All unique days that have milestones, sorted oldest → newest
+    private var datesWithMilestones: [Date] {
+        let uniqueDays = Set(
+            allMilestones.compactMap { $0.completedAt }
+                .map { calendar.startOfDay(for: $0) }
+        )
+        return uniqueDays.sorted()
     }
-    
-    private var emotionText: String {
-        guard let sentiment = activeMilestone?.emotionLevel else { return "" }
-        switch sentiment {
-        case 1: return "😢"
-        case 2: return "😕"
-        case 3: return "😐"
-        case 4: return "🙂"
-        case 5: return "😄"
-        default: return ""
+
+    private var currentDateIndex: Int? {
+        datesWithMilestones.firstIndex { calendar.isDate($0, inSameDayAs: currentDate) }
+    }
+
+    // Milestones that belong to the currently shown date
+    private var currentDayMilestones: [Milestone] {
+        allMilestones.filter {
+            guard let completedAt = $0.completedAt else { return false }
+            return calendar.isDate(completedAt, inSameDayAs: currentDate)
         }
     }
-    
+
+    private var activeMilestone: Milestone? {
+        guard !currentDayMilestones.isEmpty else { return nil }
+        let safeIndex = min(max(selectedIndex, 0), currentDayMilestones.count - 1)
+        return currentDayMilestones[safeIndex]
+    }
+
+    private var formattedDate: String {
+        PresentationHelpers.formattedDateOrdinal(currentDate)
+    }
+
+    private var emotionEmoji: String {
+        guard let level = activeMilestone?.emotionLevel, level > 0 else { return "" }
+        return ["😢", "😕", "😐", "🙂", "😄"][level - 1]
+    }
+
     private func thumbnailSize(for count: Int) -> CGFloat {
         switch count {
         case 1: return 72
@@ -377,50 +395,75 @@ struct RecollectDetailSheet: View {
         default: return 44
         }
     }
-    
+
+    private var hasPreviousDate: Bool {
+        guard let idx = currentDateIndex else { return false }
+        return idx > 0
+    }
+
+    private var hasNextDate: Bool {
+        guard let idx = currentDateIndex else { return false }
+        return idx < datesWithMilestones.count - 1
+    }
+
+    private func moveToPreviousDate() {
+        guard let idx = currentDateIndex, idx > 0 else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            currentDate = datesWithMilestones[idx - 1]
+            selectedIndex = 0
+        }
+    }
+
+    private func moveToNextDate() {
+        guard let idx = currentDateIndex, idx < datesWithMilestones.count - 1 else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            currentDate = datesWithMilestones[idx + 1]
+            selectedIndex = 0
+        }
+    }
+
     var body: some View {
         VStack(spacing: 20) {
-            Spacer()
-                .frame(height: 12)
-            
+            Spacer().frame(height: 12)
+
+            // Date navigation header
             HStack {
-                Button(action: moveToPreviousMilestone) {
+                Button(action: moveToPreviousDate) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.black)
                         .frame(width: 36, height: 36)
                         .background(Circle().fill(Color.gray.opacity(0.12)))
                 }
-                .disabled(!hasPreviousMilestone)
-                .opacity(hasPreviousMilestone ? 1 : 0.3)
-                
+                .disabled(!hasPreviousDate)
+                .opacity(hasPreviousDate ? 1 : 0.3)
+
                 Spacer()
-                
+
                 VStack(spacing: 2) {
                     Text(formattedDate)
-                        .font(.headline)
-                        .fontWeight(.bold)
+                        .font(.headline).fontWeight(.bold)
                         .foregroundColor(.black)
-                    
-                    Text("\(milestones.count) finished lesson\(milestones.count == 1 ? "" : "s")")
+                    Text("\(currentDayMilestones.count) finished lesson\(currentDayMilestones.count == 1 ? "" : "s")")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
-                
+
                 Spacer()
-                
-                Button(action: moveToNextMilestone) {
+
+                Button(action: moveToNextDate) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.black)
                         .frame(width: 36, height: 36)
                         .background(Circle().fill(Color.gray.opacity(0.12)))
                 }
-                .disabled(!hasNextMilestone)
-                .opacity(hasNextMilestone ? 1 : 0.3)
+                .disabled(!hasNextDate)
+                .opacity(hasNextDate ? 1 : 0.3)
             }
             .padding(.horizontal, 24)
-            
+
+            // Main photo card
             ZStack(alignment: .topLeading) {
                 if let data = activeMilestone?.imageData,
                    let uiImage = UIImage(data: data) {
@@ -435,7 +478,7 @@ struct RecollectDetailSheet: View {
                         .frame(maxWidth: .infinity)
                         .aspectRatio(4/3, contentMode: .fill)
                 }
-                
+
                 LinearGradient(
                     colors: [Color.black.opacity(0.65), Color.black.opacity(0.2), Color.clear],
                     startPoint: .top,
@@ -443,13 +486,11 @@ struct RecollectDetailSheet: View {
                 )
                 .frame(maxWidth: .infinity)
                 .frame(height: 220)
-                
+
                 VStack(alignment: .leading, spacing: 6) {
                     Text(activeMilestone?.title ?? "Untitled")
-                        .font(.title3)
-                        .fontWeight(.bold)
+                        .font(.title3).fontWeight(.bold)
                         .foregroundColor(.white)
-                    
                     Text(activeMilestone?.content ?? "No details available.")
                         .font(.footnote)
                         .foregroundColor(.white.opacity(0.85))
@@ -457,15 +498,18 @@ struct RecollectDetailSheet: View {
                         .multilineTextAlignment(.leading)
                 }
                 .padding(24)
-                
-                VStack {
-                    Spacer()
-                    HStack {
-                        MascotSymbol()
-                            .padding(.leading, 16)
-                            .padding(.bottom, 48)
-                        
+
+                // Emoji from user's milestone emotion rating
+                if !emotionEmoji.isEmpty {
+                    VStack {
                         Spacer()
+                        HStack {
+                            Text(emotionEmoji)
+                                .font(.system(size: 42))
+                                .padding(.leading, 20)
+                                .padding(.bottom, 16)
+                            Spacer()
+                        }
                     }
                 }
             }
@@ -478,12 +522,13 @@ struct RecollectDetailSheet: View {
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 5)
             .padding(.horizontal, 24)
-            
-            if milestones.count > 1 {
-                let tSize = thumbnailSize(for: milestones.count)
+
+            // Thumbnail row — tap to switch milestone on the current day
+            if currentDayMilestones.count > 1 {
+                let tSize = thumbnailSize(for: currentDayMilestones.count)
                 HStack(spacing: 12) {
-                    ForEach(0..<milestones.count, id: \.self) { index in
-                        let milestone = milestones[index]
+                    ForEach(0..<currentDayMilestones.count, id: \.self) { index in
+                        let milestone = currentDayMilestones[index]
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 selectedIndex = index
@@ -498,7 +543,7 @@ struct RecollectDetailSheet: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .stroke(Color(red: 76/255, green: 175/255, blue: 80/255), lineWidth: selectedIndex == index ? 3 : 0)
+                                            .stroke(Color.appAccent, lineWidth: selectedIndex == index ? 3 : 0)
                                     )
                                     .shadow(color: Color.black.opacity(0.06), radius: 3)
                             } else {
@@ -518,37 +563,13 @@ struct RecollectDetailSheet: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 10)
             }
-            
+
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-        .presentationDetents([.fraction(milestones.count > 1 ? 0.81 : 0.70)])
+        .background(Color.appBackground)
+        .presentationDetents([.fraction(currentDayMilestones.count > 1 ? 0.81 : 0.70)])
         .presentationDragIndicator(.visible)
-    }
-    
-    private var hasPreviousMilestone: Bool {
-        selectedIndex > 0
-    }
-    
-    private var hasNextMilestone: Bool {
-        selectedIndex < milestones.count - 1
-    }
-    
-    private func moveToPreviousMilestone() {
-        if selectedIndex > 0 {
-            withAnimation {
-                selectedIndex -= 1
-            }
-        }
-    }
-    
-    private func moveToNextMilestone() {
-        if selectedIndex < milestones.count - 1 {
-            withAnimation {
-                selectedIndex += 1
-            }
-        }
     }
 }
 

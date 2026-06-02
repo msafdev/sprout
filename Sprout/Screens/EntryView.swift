@@ -63,10 +63,10 @@ struct EntryView: View {
             HStack {
                 Button(action: { dismiss() }) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 38, height: 38)
-                        .background(Color.oliveSprout.opacity(0.8))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.primary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.primary.opacity(0.08))
                         .clipShape(Circle())
                 }
                 Spacer()
@@ -79,7 +79,7 @@ struct EntryView: View {
             .padding(.horizontal, 20)
             .padding(.top, 10)
             .padding(.bottom, 16)
-            .background(Color.white)
+            .background(Color.appBackground)
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
@@ -326,7 +326,7 @@ struct EntryView: View {
             parentRoadmap = Roadmap(
                 title: collectionText,
                 goalDescription: goalDescriptionText,
-                colorHex: "#A5A827"
+                colorHex: "#9F9E32"
             )
             modelContext.insert(parentRoadmap)
         }
@@ -370,5 +370,5 @@ struct EntryView: View {
 }
 
 extension Color {
-    static let oliveSprout = Color(red: 140/255, green: 162/255, blue: 64/255)
+    static let oliveSprout = Color.appAccent
 }

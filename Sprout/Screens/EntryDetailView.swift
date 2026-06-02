@@ -26,154 +26,178 @@ struct EntryDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Header with back button
-                HStack {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
+                VStack(alignment: .leading, spacing: 16) {
+                    // Main content card
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Title
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Lesson Title")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.gray)
+
+                            TextField("Entry Title", text: $entry.title, axis: .vertical)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .lineLimit(1...)
                         }
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        try? modelContext.save()
-                        dismiss()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark")
-                            Text("Save")
-                        }
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                VStack(alignment: .leading, spacing: 20) {
-                    // Title
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Lesson Title")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.gray)
-                        
-                        TextField("Entry Title", text: $entry.title)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .onSubmit { try? modelContext.save() }
-                    }
-                    
-                    // Image/Photo Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Photo")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.gray)
-                        
-                        PhotosPicker(selection: $selectedImage, matching: .images, photoLibrary: .shared()) {
-                            ZStack {
-                                if let entryImage {
-                                    entryImage
-                                        .resizable()
-                                        .aspectRatio(4/3, contentMode: .fill)
-                                        .frame(maxWidth: .infinity)
-                                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                                } else {
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.gray.opacity(0.15))
-                                        .aspectRatio(4/3, contentMode: .fit)
-                                        .overlay(
-                                            VStack(spacing: 12) {
-                                                Image(systemName: "plus.circle")
-                                                    .font(.system(size: 40))
-                                                    .foregroundColor(.gray)
-                                                Text("Add Photo")
-                                                    .font(.subheadline)
-                                                    .foregroundColor(.gray)
-                                            }
-                                        )
+
+                        Divider()
+
+                        // Image/Photo Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Photo")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.gray)
+
+                            ZStack(alignment: .topTrailing) {
+                                PhotosPicker(selection: $selectedImage, matching: .images, photoLibrary: .shared()) {
+                                    if let entryImage {
+                                        entryImage
+                                            .resizable()
+                                            .aspectRatio(4/3, contentMode: .fill)
+                                            .frame(maxWidth: .infinity)
+                                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .fill(Color.appBackground)
+                                            .aspectRatio(4/3, contentMode: .fit)
+                                            .overlay(
+                                                VStack(spacing: 10) {
+                                                    Image(systemName: "plus.circle")
+                                                        .font(.system(size: 36))
+                                                        .foregroundColor(.gray.opacity(0.6))
+                                                    Text("Add Photo")
+                                                        .font(.subheadline)
+                                                        .foregroundColor(.gray.opacity(0.6))
+                                                }
+                                            )
+                                    }
+                                }
+                                .onChange(of: selectedImage) { _, newItem in
+                                    guard let item = newItem else { return }
+                                    Task {
+                                        if let data = try? await item.loadTransferable(type: Data.self) {
+                                            entry.imageData = data
+                                            try? modelContext.save()
+                                        }
+                                    }
+                                }
+
+                                if entry.imageData != nil {
+                                    Button(action: {
+                                        entry.imageData = nil
+                                        selectedImage = nil
+                                        try? modelContext.save()
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 26))
+                                            .foregroundStyle(.white, Color.black.opacity(0.55))
+                                    }
+                                    .padding(8)
                                 }
                             }
                         }
-                        .onChange(of: selectedImage) { newItem in
-                            guard let item = newItem else { return }
-                            Task {
-                                if let data = try? await item.loadTransferable(type: Data.self) {
-                                    entry.imageData = data
-                                    try? modelContext.save()
-                                }
-                            }
+
+                        Divider()
+
+                        // Description
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Explanation")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.gray)
+
+                            TextField("Write your explanation here...", text: $entry.content, axis: .vertical)
+                                .font(.body)
+                                .lineLimit(4...)
+                                .textFieldStyle(PlainTextFieldStyle())
                         }
-                    }
-                    
-                    // Description
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Explanation")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.gray)
-                        
-                        TextEditor(text: $entry.content)
-                            .font(.body)
-                            .frame(minHeight: 100)
-                            .padding(12)
-                            .background(Color.gray.opacity(0.08))
-                            .cornerRadius(12)
-                            .onSubmit { try? modelContext.save() }
-                    }
-                    
-                    // Emotion Level
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("How did you feel after finishing this lesson?")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        
-                        HStack(spacing: 16) {
-                            ForEach(1...5, id: \.self) { level in
-                                VStack(spacing: 4) {
+
+                        Divider()
+
+                        // Emotion Level
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("How did you feel?")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.gray)
+
+                            HStack(spacing: 16) {
+                                ForEach(1...5, id: \.self) { level in
                                     Button(action: {
                                         entry.emotionLevel = (entry.emotionLevel == level) ? 0 : level
                                         try? modelContext.save()
                                     }) {
                                         emotionEmoji(for: level)
-                                            .font(.system(size: 32))
+                                            .font(.system(size: 30))
                                             .scaleEffect(entry.emotionLevel == level ? 1.2 : 1.0)
-                                            .opacity(entry.emotionLevel == level ? 1.0 : 0.5)
+                                            .opacity(entry.emotionLevel == level ? 1.0 : 0.45)
                                     }
                                 }
+                                Spacer()
                             }
-                            Spacer()
                         }
                     }
-                    
+                    .padding(20)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+
                     // Delete Button
-                    VStack(spacing: 12) {
-                        Button(action: { /* Handle delete */ }) {
-                            Text("Delete")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.red)
-                                .frame(maxWidth: .infinity)
-                                .padding(14)
-                                .background(Color.white)
-                                .cornerRadius(12)
+                    Button(action: {
+                        if let roadmap = entry.roadmap {
+                            roadmap.milestones.removeAll { $0.id == entry.id }
                         }
+                        modelContext.delete(entry)
+                        try? modelContext.save()
+                        dismiss()
+                    }) {
+                        Text("Delete Milestone")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.bottom, 28)
             }
         }
-        .background(Color(.systemBackground))
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.primary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.primary.opacity(0.08))
+                        .clipShape(Circle())
+                }
+
+                Spacer()
+
+                Button(action: {
+                    try? modelContext.save()
+                    dismiss()
+                }) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.appAccent)
+                        .clipShape(Circle())
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 8)
+            .background(Color.appBackground)
+        }
+        .background(Color.appBackground)
         .navigationBarHidden(true)
         .onChange(of: entry.title) { _, _ in
             try? modelContext.save()

@@ -21,6 +21,7 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    let _ = UserDefaults.standard.set(false, forKey: "hasSeenOnboarding")
+    return ContentView()
         .modelContainer(for: [Item.self, Roadmap.self, Milestone.self], inMemory: true)
 }

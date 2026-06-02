@@ -9,10 +9,10 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab: Int = 0
-    
+    @State private var roadmapPath = NavigationPath()
+
     var body: some View {
         VStack(spacing: 0) {
-            // Screen Contents
             Group {
                 switch selectedTab {
                 case 0:
@@ -20,16 +20,24 @@ struct MainTabView: View {
                 case 1:
                     CameraScreen()
                 case 2:
-                    RoadmapScreen()
+                    RoadmapScreen(navigationPath: $roadmapPath)
                 default:
                     RecollectScreen()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            CustomTabBar(selectedTab: $selectedTab)
+
+            CustomTabBar(selectedTab: $selectedTab) { tappedTab in
+                if tappedTab == 2 {
+                    // Always reset roadmap navigation when roadmap tab is tapped
+                    roadmapPath = NavigationPath()
+                }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = tappedTab
+                }
+            }
         }
-        .background(Color(.systemBackground))
+        .background(Color.appBackground)
         .ignoresSafeArea(.keyboard)
     }
 }
