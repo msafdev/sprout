@@ -11,23 +11,24 @@ struct MainTabView: View {
     @State private var selectedTab: Int = 0
     
     var body: some View {
-        VStack(spacing: 0) {
+        Group {
             // Screen Contents
-            Group {
-                switch selectedTab {
-                case 0:
-                    RecollectScreen()
-                case 1:
-                    CameraScreen()
-                case 2:
-                    RoadmapScreen()
-                default:
-                    RecollectScreen()
-                }
+            switch selectedTab {
+            case 0:
+                RecollectScreen()
+            case 1:
+                CameraScreen(selectedTab: $selectedTab)
+            case 2:
+                RoadmapScreen()
+            default:
+                RecollectScreen()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            CustomTabBar(selectedTab: $selectedTab)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaInset(edge: .bottom) {
+            if selectedTab != 1 {
+                CustomTabBar(selectedTab: $selectedTab)
+            }
         }
         .background(Color(.systemBackground))
         .ignoresSafeArea(.keyboard)

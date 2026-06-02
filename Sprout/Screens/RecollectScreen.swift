@@ -37,65 +37,134 @@ struct RecollectScreen: View {
         }.count
     }
     
-    var lastThreeMonths: [Date] {
-        let calendar = Calendar.current
-        let today = Date()
-        return (0..<3).compactMap { offset in
-            calendar.date(byAdding: .month, value: -offset, to: today)
-        }
-    }
+    @State private var currentMonthDate: Date = Date()
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                HStack {
-                    Text("Collection")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundColor(.black)
+            VStack(alignment: .leading, spacing: 48) {
+                VStack(alignment: .leading, spacing: 24) {
+                    HStack {
+                        Text("Collection")
+                            .font(.system(size: 34, weight: .heavy, design: .rounded))
+                            .foregroundColor(.primary)
+                            .kerning(-0.5)
+                        
+                        Spacer()
+                        
+                        Button(action: { showingProfileSheet = true }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemGray6))
+                                    .frame(width: 44, height: 44)
+                                
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.primary.opacity(0.7))
+                            }
+                        }
+                    }
+                    .padding(.top, 10)
                     
-                    Spacer()
-                    
-                    Button(action: { showingProfileSheet = true }) {
-                        Image(systemName: "person.crop.circle")
-                            .font(.system(size: 28))
-                            .foregroundColor(.black.opacity(0.8))
+                    HStack(spacing: 12) {
+                        // Card 1: This week
+                        VStack(alignment: .leading, spacing: 36) {
+                            HStack(alignment: .top) {
+                                Image(systemName: "drop.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 28, height: 28)
+                                    .background(Color.black.opacity(0.12))
+                                    .clipShape(Circle())
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("This week")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                
+                                Text("\(weekCount) done")
+                                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                                    .foregroundColor(.white.opacity(0.85))
+                            }
+                        }
+                        .padding(20)
+                        .frame(maxWidth: .infinity)
+                        .background(Color(red: 70/255, green: 70/255, blue: 180/255))
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        
+                        // Card 2: This month
+                        VStack(alignment: .leading, spacing: 36) {
+                            HStack(alignment: .top) {
+                                Image(systemName: "leaf.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 28, height: 28)
+                                    .background(Color.black.opacity(0.12))
+                                    .clipShape(Circle())
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("This month")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                
+                                Text("\(monthCount) done")
+                                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                                    .foregroundColor(.white.opacity(0.85))
+                            }
+                        }
+                        .padding(20)
+                        .frame(maxWidth: .infinity)
+                        .background(Color(red: 150/255, green: 180/255, blue: 80/255))
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     }
                 }
-                .padding(.top, 20)
-                
-                HStack(spacing: 40) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("\(weekCount)")
-                            .font(.system(size: 46, weight: .semibold))
-                            .foregroundColor(.white)
-                        Text("This week")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white.opacity(0.85))
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("\(monthCount)")
-                            .font(.system(size: 46, weight: .semibold))
-                            .foregroundColor(.white)
-                        Text("This month")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white.opacity(0.85))
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 22)
-                .background(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color(red: 150/255, green: 180/255, blue: 80/255))
-                )
                 
                 VStack(spacing: 32) {
-                    ForEach(lastThreeMonths, id: \.self) { monthDate in
-                        MonthCalendarView(monthDate: monthDate, milestones: completedMilestones) { dayMilestones in
-                            if !dayMilestones.isEmpty {
-                                selectedDaySelection = DaySelection(date: dayMilestones.first?.completedAt ?? Date(), milestones: dayMilestones)
+                    MonthCalendarView(monthDate: $currentMonthDate, milestones: completedMilestones) { dayMilestones in
+                        if !dayMilestones.isEmpty {
+                            selectedDaySelection = DaySelection(date: dayMilestones.first?.completedAt ?? Date(), milestones: dayMilestones)
+                        }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 18) {
+                        Text("History")
+                            .font(.system(size: 22, weight: .bold))
+                            .padding(.top, 8)
+                        
+                        if completedMilestones.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "tray")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.gray.opacity(0.5))
+                                Text("No history yet")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.gray)
+                                Text("Your completed lessons and milestones will appear here")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray.opacity(0.8))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 32)
+                            .padding(.horizontal, 24)
+                            .background(Color(.systemGray6).opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        } else {
+                            ForEach(completedMilestones) { milestone in
+                                HistoryRowView(milestone: milestone)
                             }
                         }
                     }
@@ -105,7 +174,7 @@ struct RecollectScreen: View {
             .padding(.horizontal, 20)
         }
         .background(Color(.systemBackground))
-        .sheet(isPresented: $showingProfileSheet) {
+        .fullScreenCover(isPresented: $showingProfileSheet) {
             ProfileSheetView()
         }
         .sheet(item: $selectedDaySelection) { selection in
@@ -120,65 +189,211 @@ struct DaySelection: Identifiable {
     let milestones: [Milestone]
 }
 
+struct HistoryRowView: View {
+    let milestone: Milestone
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(Color.black)
+                    .frame(width: 48, height: 48)
+                Image(systemName: "text.book.closed")
+                    .foregroundColor(.white)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(milestone.title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                if let completedAt = milestone.completedAt {
+                    Text(PresentationHelpers.formattedDateOrdinal(completedAt))
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+                
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color(red: 150/255, green: 180/255, blue: 80/255))
+                        .frame(width: 8, height: 8)
+                    Text("Finished")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            Spacer()
+            
+            Image(systemName: "paperclip")
+                .foregroundColor(.gray)
+                .padding(12)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(Circle())
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+}
+
 struct ProfileSheetView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationStack {
-            List {
-                Section(header: Text("Account")) {
-                    HStack {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Circle().fill(Color.blue))
+        VStack(spacing: 0) {
+            // Top Bar
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                Text("Your Family")
+                    .font(.system(size: 18, weight: .semibold))
+                
+                Spacer()
+                
+                Button(action: {}) {
+                    Image(systemName: "questionmark.circle")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+            
+            ScrollView {
+                VStack(spacing: 32) {
+                    // Profile section
+                    VStack(spacing: 0) {
+                        SettingsRowView(
+                            icon: "cloud.fill", iconColor: Color(red: 255/255, green: 75/255, blue: 114/255), isLargeIcon: true,
+                            title: "Salman", subtitle: "Manage your account",
+                            rightIcon: "chevron.right", rightText: nil
+                        )
+                        SettingsRowView(
+                            icon: "person.crop.rectangle", iconColor: .gray.opacity(0.8), isLargeIcon: true,
+                            title: "Address Book", subtitle: "Manage contacts & addresses",
+                            rightIcon: "chevron.right", rightText: nil
+                        )
+                    }
+                    .padding(.top, 16)
+                    
+                    // Settings Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("SETTINGS")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.leading, 24)
                         
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Salman Alfarisi")
-                                .font(.headline)
-                            Text("salman@sprout.com")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                        VStack(spacing: 0) {
+                            SettingsRowView(icon: "dollarsign", iconColor: .gray, isLargeIcon: false, title: "Currency", rightIcon: "ellipsis", rightText: "USD")
+                            SettingsRowView(icon: "moon", iconColor: .gray, isLargeIcon: false, title: "Appearance", rightIcon: "ellipsis", rightText: "Light")
+                            SettingsRowView(icon: "wallet.pass", iconColor: .gray, isLargeIcon: false, title: "Manage Wallets", rightIcon: "chevron.right", rightText: nil)
+                            SettingsRowView(icon: "slider.horizontal.3", iconColor: .gray, isLargeIcon: false, title: "Preferences", rightIcon: "chevron.right", rightText: nil)
+                            SettingsRowView(icon: "safari", iconColor: .gray, isLargeIcon: false, title: "Browser Settings", rightIcon: "chevron.right", rightText: nil)
+                            SettingsRowView(icon: "bell", iconColor: .gray, isLargeIcon: false, title: "Notifications", rightIcon: "ellipsis", rightText: nil)
+                            SettingsRowView(icon: "bolt", iconColor: .gray, isLargeIcon: false, title: "Refuel Wallet", rightIcon: "ellipsis", rightText: nil)
+                            SettingsRowView(icon: "app.dashed", iconColor: .gray, isLargeIcon: false, title: "App Icon", rightIcon: "ellipsis", rightText: nil)
                         }
                     }
-                    .padding(.vertical, 4)
-                }
-                
-                Section(header: Text("Preferences")) {
-                    HStack {
-                        Label("Notifications", systemImage: "bell.fill")
-                        Spacer()
-                        Toggle("", isOn: .constant(true)).labelsHidden()
-                    }
                     
-                    HStack {
-                        Label("Dark Mode", systemImage: "moon.fill")
-                        Spacer()
-                        Toggle("", isOn: .constant(false)).labelsHidden()
+                    // More Options Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("MORE OPTIONS")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.leading, 24)
+                        
+                        VStack(spacing: 0) {
+                            SettingsRowView(icon: "cloud", iconColor: .gray, isLargeIcon: false, title: "iCloud Backups", rightIcon: "chevron.right", rightText: nil)
+                        }
                     }
                 }
-                
-                Section(header: Text("About")) {
-                    LabeledContent("App Version", value: "1.0.0")
-                    LabeledContent("Developer", value: "Salman Alfarisi")
-                }
-            }
-            .navigationTitle("Profile & Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
+                .padding(.bottom, 40)
             }
         }
+        .background(Color(.systemBackground))
+    }
+}
+
+struct SettingsRowView: View {
+    let icon: String
+    let iconColor: Color
+    let isLargeIcon: Bool
+    let title: String
+    var subtitle: String? = nil
+    let rightIcon: String
+    let rightText: String?
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            if isLargeIcon {
+                if icon == "cloud.fill" {
+                    Image(systemName: icon)
+                        .font(.system(size: 24))
+                        .foregroundColor(.white)
+                        .frame(width: 48, height: 48)
+                        .background(iconColor)
+                        .clipShape(Circle())
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundColor(iconColor)
+                        .frame(width: 48, height: 48)
+                }
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(iconColor)
+                    .frame(width: 32, height: 32)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            Spacer()
+            
+            if let rightText = rightText {
+                Text(rightText)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            if rightIcon == "ellipsis" {
+                Image(systemName: rightIcon)
+                    .rotationEffect(.degrees(90))
+                    .font(.system(size: 18))
+                    .foregroundColor(.gray.opacity(0.8))
+            } else {
+                Image(systemName: rightIcon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.6))
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, isLargeIcon ? 16 : 14)
+        .contentShape(Rectangle())
     }
 }
 
 struct MonthCalendarView: View {
-    let monthDate: Date
+    @Binding var monthDate: Date
     let milestones: [Milestone]
     let onSelectDay: ([Milestone]) -> Void
     
@@ -215,15 +430,39 @@ struct MonthCalendarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
+                Button(action: {
+                    if let newDate = calendar.date(byAdding: .month, value: -1, to: monthDate) {
+                        monthDate = newDate
+                    }
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary)
+                        .frame(width: 36, height: 36)
+                        .background(Color(.systemGray6))
+                        .clipShape(Circle())
+                }
+                
+                Spacer()
+                
                 Text(monthHeader)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Text("\(totalEntriesInMonth) entries")
-                    .font(.system(size: 15))
-                    .foregroundColor(.gray.opacity(0.8))
+                Button(action: {
+                    if let newDate = calendar.date(byAdding: .month, value: 1, to: monthDate) {
+                        monthDate = newDate
+                    }
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary)
+                        .frame(width: 36, height: 36)
+                        .background(Color(.systemGray6))
+                        .clipShape(Circle())
+                }
             }
             
             HStack(spacing: 0) {
@@ -235,8 +474,8 @@ struct MonthCalendarView: View {
                 }
             }
             
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
-            LazyVGrid(columns: columns, spacing: 10) {
+            let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+            LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(0..<firstWeekdayOffset, id: \.self) { _ in
                     Spacer()
                         .frame(height: 44)
@@ -274,66 +513,34 @@ struct CalendarDayCell: View {
     let milestones: [Milestone]
     let onSelect: () -> Void
     
-    private var image: Image? {
-        guard let data = milestones.first?.imageData,
-              let uiImage = UIImage(data: data) else { return nil }
-        return Image(uiImage: uiImage)
-    }
-    
     var body: some View {
-        ZStack {
+        Button(action: {
             if !milestones.isEmpty {
-                Button(action: onSelect) {
-                    ZStack(alignment: .topTrailing) {
-                        if let image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                                .aspectRatio(1, contentMode: .fit)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        } else {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color.gray.opacity(0.15))
-                                .aspectRatio(1, contentMode: .fit)
-                        }
-                        
-                        Text("\(day)")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color.white)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        
-                        Text("\(milestones.count)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(4)
-                            .background(
-                                Circle()
-                                    .fill(Color(red: 150/255, green: 180/255, blue: 80/255))
-                            )
-                            .offset(x: 5, y: -5)
-                    }
+                onSelect()
+            }
+        }) {
+            ZStack {
+                let count = milestones.count
+                if count > 0 {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color(red: 150/255, green: 180/255, blue: 80/255).opacity(min(1.0, 0.4 + Double(count) * 0.2)))
+                        .aspectRatio(1, contentMode: .fit)
+                    
+                    Text("\(day)")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                } else {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(isToday ? Color(red: 150/255, green: 180/255, blue: 80/255).opacity(0.18) : Color(.systemGray6).opacity(0.5))
+                        .aspectRatio(1, contentMode: .fit)
+                    
+                    Text("\(day)")
+                        .font(.system(size: 16, weight: isToday ? .bold : .regular))
+                        .foregroundColor(isToday ? Color(red: 140/255, green: 200/255, blue: 70/255) : .primary.opacity(0.5))
                 }
-                .buttonStyle(EmptyTabButtonStyle())
-            } else {
-                ZStack {
-                    if isToday {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(red: 150/255, green: 180/255, blue: 80/255).opacity(0.18))
-                            .aspectRatio(1, contentMode: .fit)
-                        
-                        Text("\(day)")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 140/255, green: 200/255, blue: 70/255))
-                    } else {
-                        Text("\(day)")
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(.primary)
-                    }
-                }
-                .frame(height: 40)
             }
         }
+        .buttonStyle(EmptyTabButtonStyle())
     }
 }
 

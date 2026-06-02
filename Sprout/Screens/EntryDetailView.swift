@@ -103,7 +103,7 @@ struct EntryDetailView: View {
                                 }
                             }
                         }
-                        .onChange(of: selectedImage) { newItem in
+                        .onChange(of: selectedImage) { _, newItem in
                             guard let item = newItem else { return }
                             Task {
                                 if let data = try? await item.loadTransferable(type: Data.self) {
