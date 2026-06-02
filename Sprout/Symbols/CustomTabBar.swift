@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
-    var onTabTapped: (Int) -> Void
+    var onTabTapped: (Int) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 80) {
@@ -17,7 +17,11 @@ struct CustomTabBar: View {
                 TabBarItem(
                     index: index,
                     selectedTab: $selectedTab,
-                    systemName: tabSystemImage(for: index)
+                    systemName: tabSystemImage(for: index),
+                    onTap: {
+                        selectedTab = index
+                        onTabTapped(index)
+                    }
                 )
             }
         }

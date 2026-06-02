@@ -20,7 +20,7 @@ struct MainTabView: View {
             case 1:
                 CameraScreen(selectedTab: $selectedTab)
             case 2:
-                RoadmapScreen()
+                RoadmapScreen(navigationPath: $roadmapPath)
             default:
                 RecollectScreen()
             }
