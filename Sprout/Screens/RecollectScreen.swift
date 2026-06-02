@@ -13,6 +13,9 @@ struct RecollectScreen: View {
     @State private var showingProfileSheet = false
     @State private var selectedDaySelection: DaySelection? = nil
     
+    // Controlled from the parent so the calendar state updates cleanly across views
+    @State private var currentCalendarMonthDate = Date()
+    
     private var completedMilestones: [Milestone] {
         milestones
             .filter { $0.isCompleted && $0.completedAt != nil }
@@ -37,17 +40,10 @@ struct RecollectScreen: View {
         }.count
     }
     
-    var lastThreeMonths: [Date] {
-        let calendar = Calendar.current
-        let today = Date()
-        return (0..<3).compactMap { offset in
-            calendar.date(byAdding: .month, value: -offset, to: today)
-        }
-    }
-    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                // Header Row
                 HStack {
                     Text("Collection")
                         .font(.system(size: 34, weight: .bold))
@@ -63,6 +59,7 @@ struct RecollectScreen: View {
                 }
                 .padding(.top, 20)
                 
+                // Weekly / Monthly Stats Card
                 HStack(spacing: 40) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("\(weekCount)")
@@ -91,13 +88,10 @@ struct RecollectScreen: View {
                         .fill(Color.appAccent)
                 )
                 
-                VStack(spacing: 32) {
-                    ForEach(lastThreeMonths, id: \.self) { monthDate in
-                        MonthCalendarView(monthDate: monthDate, milestones: completedMilestones) { dayMilestones in
-                            if !dayMilestones.isEmpty {
-                                selectedDaySelection = DaySelection(date: dayMilestones.first?.completedAt ?? Date(), milestones: dayMilestones)
-                            }
-                        }
+                // Fixed Unified Calendar Component (Multi-month loop history removed)
+                MonthCalendarView(monthDate: $currentCalendarMonthDate, milestones: completedMilestones) { dayMilestones in
+                    if !dayMilestones.isEmpty {
+                        selectedDaySelection = DaySelection(date: dayMilestones.first?.completedAt ?? Date(), milestones: dayMilestones)
                     }
                 }
                 .padding(.bottom, 20)
@@ -120,6 +114,212 @@ struct DaySelection: Identifiable {
     let milestones: [Milestone]
 }
 
+// MARK: - Fixed Month Calendar View
+struct MonthCalendarView: View {
+    @Binding var monthDate: Date
+    let milestones: [Milestone]
+    let onSelectDay: ([Milestone]) -> Void
+    
+    private let calendar = Calendar.current
+    private let weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+    
+    var monthHeader: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: monthDate)
+    }
+    
+    var totalEntriesInMonth: Int {
+        let components = calendar.dateComponents([.year, .month], from: monthDate)
+        return milestones.filter { milestone in
+            guard let completedAt = milestone.completedAt else { return false }
+            let entryComponents = calendar.dateComponents([.year, .month], from: completedAt)
+            return entryComponents.year == components.year && entryComponents.month == components.month
+        }.count
+    }
+    
+    var daysInMonth: Int {
+        guard let range = calendar.range(of: .day, in: .month, for: monthDate) else { return 30 }
+        return range.count
+    }
+    
+    var firstWeekdayOffset: Int {
+        let components = calendar.dateComponents([.year, .month], from: monthDate)
+        guard let firstDayOfMonth = calendar.date(from: components) else { return 0 }
+        let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth)
+        return firstWeekday - 1
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Month Switcher Header
+            HStack {
+                Button(action: {
+                    if let newDate = calendar.date(byAdding: .month, value: -1, to: monthDate) {
+                        monthDate = newDate
+                    }
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary)
+                        .frame(width: 36, height: 36)
+                        .background(Color(.systemGray6))
+                        .clipShape(Circle())
+                }
+                
+                Spacer()
+                
+                VStack(spacing: 2) {
+                    Text(monthHeader)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                    Text("\(totalEntriesInMonth) entries")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray.opacity(0.8))
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    if let newDate = calendar.date(byAdding: .month, value: 1, to: monthDate) {
+                        monthDate = newDate
+                    }
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary)
+                        .frame(width: 36, height: 36)
+                        .background(Color(.systemGray6))
+                        .clipShape(Circle())
+                }
+            }
+            
+            // Weekday Row
+            HStack(spacing: 0) {
+                ForEach(weekdays, id: \.self) { day in
+                    Text(day)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.gray.opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+            // Grid
+            let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(0..<firstWeekdayOffset, id: \.self) { _ in
+                    Spacer()
+                        .frame(height: 44)
+                }
+                
+                ForEach(1...daysInMonth, id: \.self) { day in
+                    let date = dateForDay(day)
+                    let dateMilestones = milestonesForDate(date)
+                    
+                    CalendarDayCell(
+                        day: day,
+                        isToday: calendar.isDateInToday(date),
+                        milestones: dateMilestones
+                    ) {
+                        onSelectDay(dateMilestones)
+                    }
+                }
+            }
+        }
+    }
+    
+    // Fixed: Pulls structural components explicitly matching current calendar calculation contexts
+    private func dateForDay(_ day: Int) -> Date {
+        var components = calendar.dateComponents([.year, .month], from: monthDate)
+        components.day = day
+        return calendar.date(from: components) ?? Date()
+    }
+    
+    private func milestonesForDate(_ date: Date) -> [Milestone] {
+        milestones.filter { milestone in
+            guard let completedAt = milestone.completedAt else { return false }
+            return calendar.isDate(completedAt, inSameDayAs: date)
+        }
+    }
+}
+
+// MARK: - Gaby's Visual Calendar Cell Style
+struct CalendarDayCell: View {
+    let day: Int
+    let isToday: Bool
+    let milestones: [Milestone]
+    let onSelect: () -> Void
+    
+    private var cellImage: Image? {
+        guard let data = milestones.first?.imageData,
+              let uiImage = UIImage(data: data) else { return nil }
+        return Image(uiImage: uiImage)
+    }
+    
+    var body: some View {
+        Button(action: {
+            if !milestones.isEmpty {
+                onSelect()
+            }
+        }) {
+            ZStack {
+                if !milestones.isEmpty {
+                    // Gaby's Photo Thumbnail Cell View Layout
+                    ZStack(alignment: .topTrailing) {
+                        if let cellImage {
+                            cellImage
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                                .aspectRatio(1, contentMode: .fit)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .clipped() // Fixed: Prevented wide images leaking out of bounds
+                        } else {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.gray.opacity(0.15))
+                                .aspectRatio(1, contentMode: .fit)
+                        }
+                        
+                        // Dark overlay tint to make day number legible on top of photo assets
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color.black.opacity(0.25))
+                            .aspectRatio(1, contentMode: .fit)
+                        
+                        Text("\(day)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        
+                        // Numeric Milestone Badge Indicator Counter
+                        Text("\(milestones.count)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(5)
+                            .background(
+                                Circle()
+                                    .fill(Color.appAccent)
+                            )
+                            .offset(x: 4, y: -4)
+                    }
+                } else {
+                    // Clean Empty Day Cell Structure (Sized perfectly matching active images)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(isToday ? Color.appAccent.opacity(0.15) : Color(.systemGray6).opacity(0.5))
+                            .aspectRatio(1, contentMode: .fit)
+                        
+                        Text("\(day)")
+                            .font(.system(size: 16, weight: isToday ? .bold : .regular))
+                            .foregroundColor(isToday ? Color.appAccent : .primary.opacity(0.5))
+                    }
+                }
+            }
+        }
+        .buttonStyle(EmptyTabButtonStyle())
+    }
+}
+
+// MARK: - Profile & Settings View
 struct ProfileSheetView: View {
     @Environment(\.dismiss) private var dismiss
     
@@ -177,167 +377,6 @@ struct ProfileSheetView: View {
     }
 }
 
-struct MonthCalendarView: View {
-    let monthDate: Date
-    let milestones: [Milestone]
-    let onSelectDay: ([Milestone]) -> Void
-    
-    private let calendar = Calendar.current
-    private let weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
-    
-    var monthHeader: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: monthDate)
-    }
-    
-    var totalEntriesInMonth: Int {
-        let components = calendar.dateComponents([.year, .month], from: monthDate)
-        return milestones.filter { milestone in
-            guard let completedAt = milestone.completedAt else { return false }
-            let entryComponents = calendar.dateComponents([.year, .month], from: completedAt)
-            return entryComponents.year == components.year && entryComponents.month == components.month
-        }.count
-    }
-    
-    var daysInMonth: Int {
-        let range = calendar.range(of: .day, in: .month, for: monthDate)!
-        return range.count
-    }
-    
-    var firstWeekdayOffset: Int {
-        let components = calendar.dateComponents([.year, .month], from: monthDate)
-        let firstDayOfMonth = calendar.date(from: components)!
-        let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth)
-        return firstWeekday - 1
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text(monthHeader)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text("\(totalEntriesInMonth) entries")
-                    .font(.system(size: 15))
-                    .foregroundColor(.gray.opacity(0.8))
-            }
-            
-            HStack(spacing: 0) {
-                ForEach(weekdays, id: \.self) { day in
-                    Text(day)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.gray.opacity(0.6))
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(0..<firstWeekdayOffset, id: \.self) { _ in
-                    Spacer()
-                        .frame(height: 44)
-                }
-                
-                ForEach(1...daysInMonth, id: \.self) { day in
-                    let date = dateForDay(day)
-                    let dateMilestones = milestonesForDate(date)
-                    
-                    CalendarDayCell(day: day, isToday: calendar.isDateInToday(date), milestones: dateMilestones) {
-                        onSelectDay(dateMilestones)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func dateForDay(_ day: Int) -> Date {
-        var components = calendar.dateComponents([.year, .month], from: monthDate)
-        components.day = day
-        return calendar.date(from: components) ?? Date()
-    }
-    
-    private func milestonesForDate(_ date: Date) -> [Milestone] {
-        milestones.filter { milestone in
-            guard let completedAt = milestone.completedAt else { return false }
-            return calendar.isDate(completedAt, inSameDayAs: date)
-        }
-    }
-}
-
-struct CalendarDayCell: View {
-    let day: Int
-    let isToday: Bool
-    let milestones: [Milestone]
-    let onSelect: () -> Void
-    
-    private var image: Image? {
-        guard let data = milestones.first?.imageData,
-              let uiImage = UIImage(data: data) else { return nil }
-        return Image(uiImage: uiImage)
-    }
-    
-    var body: some View {
-        ZStack {
-            if !milestones.isEmpty {
-                Button(action: onSelect) {
-                    ZStack(alignment: .topTrailing) {
-                        if let image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                                .aspectRatio(1, contentMode: .fit)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        } else {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color.gray.opacity(0.15))
-                                .aspectRatio(1, contentMode: .fit)
-                        }
-                        
-                        Text("\(day)")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color.white)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        
-                        Text("\(milestones.count)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(4)
-                            .background(
-                                Circle()
-                                    .fill(Color.appAccent)
-                            )
-                            .offset(x: 5, y: -5)
-                    }
-                }
-                .buttonStyle(EmptyTabButtonStyle())
-            } else {
-                ZStack {
-                    if isToday {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color.appAccent.opacity(0.18))
-                            .aspectRatio(1, contentMode: .fit)
-                        
-                        Text("\(day)")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color.appAccent)
-                    } else {
-                        Text("\(day)")
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(.primary)
-                    }
-                }
-                .frame(height: 40)
-            }
-        }
-    }
-}
-
-
 // MARK: - Detail Sheet View
 struct RecollectDetailSheet: View {
     let allMilestones: [Milestone]
@@ -350,7 +389,6 @@ struct RecollectDetailSheet: View {
         self._currentDate = State(initialValue: date)
     }
 
-    // All unique days that have milestones, sorted oldest → newest
     private var datesWithMilestones: [Date] {
         let uniqueDays = Set(
             allMilestones.compactMap { $0.completedAt }
@@ -363,10 +401,9 @@ struct RecollectDetailSheet: View {
         datesWithMilestones.firstIndex { calendar.isDate($0, inSameDayAs: currentDate) }
     }
 
-    // Milestones that belong to the currently shown date
     private var currentDayMilestones: [Milestone] {
-        allMilestones.filter {
-            guard let completedAt = $0.completedAt else { return false }
+        allMilestones.filter { milestone in
+            guard let completedAt = milestone.completedAt else { return false }
             return calendar.isDate(completedAt, inSameDayAs: currentDate)
         }
     }
@@ -499,7 +536,6 @@ struct RecollectDetailSheet: View {
                 }
                 .padding(24)
 
-                // Emoji from user's milestone emotion rating
                 if !emotionEmoji.isEmpty {
                     VStack {
                         Spacer()
@@ -523,7 +559,7 @@ struct RecollectDetailSheet: View {
             .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 5)
             .padding(.horizontal, 24)
 
-            // Thumbnail row — tap to switch milestone on the current day
+            // Thumbnail switcher row
             if currentDayMilestones.count > 1 {
                 let tSize = thumbnailSize(for: currentDayMilestones.count)
                 HStack(spacing: 12) {
@@ -573,8 +609,7 @@ struct RecollectDetailSheet: View {
     }
 }
 
-
 #Preview {
     RecollectScreen()
-        .modelContainer(for: [Item.self, Roadmap.self, Milestone.self], inMemory: true)
+        .modelContainer(for: [Milestone.self], inMemory: true)
 }

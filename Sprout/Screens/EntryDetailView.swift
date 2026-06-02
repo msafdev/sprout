@@ -100,7 +100,7 @@ struct EntryDetailView: View {
                                 }
                             }
                         }
-
+                        
                         Divider()
 
                         // Description
@@ -109,11 +109,21 @@ struct EntryDetailView: View {
                                 .font(.caption)
                                 .fontWeight(.bold)
                                 .foregroundColor(.gray)
-
+                            
                             TextField("Write your explanation here...", text: $entry.content, axis: .vertical)
                                 .font(.body)
                                 .lineLimit(4...)
                                 .textFieldStyle(PlainTextFieldStyle())
+                        }
+                            
+                        .onChange(of: selectedImage) { _, newItem in
+                            guard let item = newItem else { return }
+                            Task {
+                                if let data = try? await item.loadTransferable(type: Data.self) {
+                                    entry.imageData = data
+                                    try? modelContext.save()
+                                }
+                            }
                         }
 
                         Divider()

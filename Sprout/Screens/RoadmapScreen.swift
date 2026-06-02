@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Main Roadmap Screen Catalog Dashboard
 struct RoadmapScreen: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Roadmap.createdAt, order: .reverse) private var roadmaps: [Roadmap]
@@ -128,7 +129,6 @@ struct RoadmapScreen: View {
 }
 
 // MARK: - Stat Views
-
 struct StatItemView: View {
     let label: String
     let value: String
@@ -178,8 +178,7 @@ struct MascotStatView: View {
     }
 }
 
-// MARK: - Roadmap Card
-
+// MARK: - Roadmap Grid Thumbnail Dashboard Card Component
 struct RoadmapCardView: View {
     let roadmap: Roadmap
 
@@ -188,10 +187,12 @@ struct RoadmapCardView: View {
     var themeColor: Color { Color.fromHex(roadmap.colorHex) }
     var completedCount: Int { roadmap.milestones.filter { $0.isCompleted }.count }
     var totalCount: Int { roadmap.milestones.count }
+    
     var progress: Double {
         guard totalCount > 0 else { return 0.0 }
         return Double(completedCount) / Double(totalCount)
     }
+    
     var sproutImage: String? {
         guard totalCount > 0 else { return nil }
         if progress == 0 { return "animation 1" }
@@ -227,7 +228,7 @@ struct RoadmapCardView: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule().fill(Color(.systemGray5)).frame(height: 8)
-                            Capsule().fill(themeColor).frame(width: geo.size.width * CGFloat(progress), height: 8)
+                            Capsule().fill(themeColor).frame(width: max(0, geo.size.width * CGFloat(progress)), height: 8)
                         }
                     }
                     .frame(height: 8)
@@ -255,8 +256,7 @@ struct RoadmapCardView: View {
     }
 }
 
-// MARK: - Roadmap Detail View
-
+// MARK: - Detailed Inside Workspace View
 struct RoadmapDetailView: View {
     @Bindable var roadmap: Roadmap
     @Environment(\.modelContext) private var modelContext
@@ -270,10 +270,12 @@ struct RoadmapDetailView: View {
     var themeColor: Color { Color.fromHex(roadmap.colorHex) }
     var completedCount: Int { roadmap.milestones.filter { $0.isCompleted }.count }
     var totalCount: Int { roadmap.milestones.count }
+    
     var progress: Double {
         guard totalCount > 0 else { return 0.0 }
         return Double(completedCount) / Double(totalCount)
     }
+    
     var sproutImage: String? {
         guard totalCount > 0 else { return nil }
         if progress == 0 { return "animation 1" }
@@ -282,6 +284,7 @@ struct RoadmapDetailView: View {
         if progress <= 0.75 { return "animation 4" }
         return "animation 5"
     }
+    
     var stageName: String {
         if totalCount == 0 { return "Nothing Planted Yet" }
         if progress == 0 { return "Freshly Planted" }
@@ -290,6 +293,7 @@ struct RoadmapDetailView: View {
         if progress <= 0.75 { return "Almost There" }
         return "Fully Sprouted!"
     }
+    
     var stageSubtitle: String {
         if totalCount == 0 { return "Add a milestone to begin your journey" }
         if progress == 0 { return "Every journey starts with a single seed." }
@@ -300,11 +304,11 @@ struct RoadmapDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Header card
+                // Header Goal Info Workspace Card
                 VStack(alignment: .leading, spacing: 14) {
                     TextField("New goal", text: $roadmap.title, axis: .vertical)
                         .lineLimit(1...)
-                        .font(.title.bold())
+                        .font(.title2).bold()
                         .foregroundColor(.primary)
 
                     if showTitleRequired && roadmap.title.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -354,7 +358,7 @@ struct RoadmapDetailView: View {
                                     .frame(height: 10)
                                 RoundedRectangle(cornerRadius: 6)
                                     .fill(themeColor)
-                                    .frame(width: geo.size.width * CGFloat(progress), height: 10)
+                                    .frame(width: max(0, geo.size.width * CGFloat(progress)), height: 10)
                             }
                         }
                         .frame(height: 10)
@@ -365,7 +369,7 @@ struct RoadmapDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .shadow(color: Color.primary.opacity(0.04), radius: 10, x: 0, y: 6)
 
-                // Milestones section
+                // Milestones Subsystem Entry Section View Tracker
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Milestones")
                         .font(.title3).fontWeight(.bold)
@@ -399,15 +403,13 @@ struct RoadmapDetailView: View {
                     } else {
                         VStack(spacing: 12) {
                             ForEach(roadmap.milestones) { milestone in
-                                Button(action: { selectedMilestone = milestone }) {
-                                    EntryRowView(
-                                        milestone: milestone,
-                                        themeColor: themeColor,
-                                        onToggle: { toggleMilestone(milestone) },
-                                        onDelete: { deleteMilestone(milestone) }
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                EntryRowView(
+                                    milestone: milestone,
+                                    themeColor: themeColor,
+                                    onToggle: { toggleMilestone(milestone) },
+                                    onDelete: { deleteMilestone(milestone) },
+                                    onRowTap: { selectedMilestone = milestone }
+                                )
                             }
                         }
                     }
@@ -517,23 +519,25 @@ struct RoadmapDetailView: View {
     }
 }
 
-// MARK: - Entry Row View
-
+// MARK: - Individual Row Component (Avoids Gesture Hierarchy Interferences)
 struct EntryRowView: View {
     @Bindable var milestone: Milestone
     let themeColor: Color
     let onToggle: () -> Void
     let onDelete: () -> Void
+    let onRowTap: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: onToggle) {
-                Image(systemName: milestone.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 24))
-                    .foregroundColor(milestone.isCompleted ? themeColor : .primary.opacity(0.35))
-            }
-            .disabled(!milestone.isCompleted && milestone.imageData == nil)
+            // Checkbox Control Handle
+            Image(systemName: milestone.isCompleted ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 24))
+                .foregroundColor(milestone.isCompleted ? themeColor : .primary.opacity(0.35))
+                .onTapGesture {
+                    onToggle()
+                }
 
+            // Central Tap Segment (Navigates cleanly to Detail Cards)
             VStack(alignment: .leading, spacing: 3) {
                 Text(milestone.title)
                     .font(.subheadline).fontWeight(.semibold)
@@ -548,19 +552,25 @@ struct EntryRowView: View {
                         .foregroundColor(.red)
                 }
             }
-
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onRowTap()
+            }
 
             if milestone.emotionLevel > 0 {
                 Text(emotionEmoji(for: milestone.emotionLevel))
                     .font(.system(size: 22))
             }
 
+            // Destructive Delete Controls Action Item
             Button(action: onDelete) {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.primary.opacity(0.4))
+                    .frame(width: 24, height: 24)
             }
+            .buttonStyle(PlainButtonStyle())
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
@@ -571,11 +581,16 @@ struct EntryRowView: View {
     }
 
     private func emotionEmoji(for level: Int) -> String {
-        ["😢", "😕", "😐", "🙂", "😄"][level - 1]
+        let cleanIndex = max(0, min(level - 1, 4))
+        return ["😢", "😕", "😐", "🙂", "😄"][cleanIndex]
     }
 }
 
+// MARK: - Local Canvas Previews Environment Configuration Setup
 #Preview {
-    RoadmapScreen(navigationPath: .constant(NavigationPath()))
-        .modelContainer(for: [Roadmap.self, Milestone.self], inMemory: true)
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Roadmap.self, Milestone.self, configurations: config)
+    
+    return RoadmapScreen(navigationPath: .constant(NavigationPath()))
+        .modelContainer(container)
 }

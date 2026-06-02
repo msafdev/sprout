@@ -9,28 +9,36 @@ import SwiftUI
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
-    var onTabTapped: (Int) -> Void
+    var onTabTapped: (Int) -> Void = { _ in }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .background(Color.black.opacity(0.06))
-
-            HStack(spacing: 80) {
-                ForEach(0..<3, id: \.self) { index in
-                    TabBarItem(
-                        index: index,
-                        selectedTab: $selectedTab,
-                        systemName: tabSystemImage(for: index),
-                        onTap: { onTabTapped(index) }
-                    )
-                }
+        HStack(spacing: 80) {
+            ForEach(0..<3, id: \.self) { index in
+                TabBarItem(
+                    index: index,
+                    selectedTab: $selectedTab,
+                    systemName: tabSystemImage(for: index),
+                    onTap: {
+                        selectedTab = index
+                        onTabTapped(index)
+                    }
+                )
             }
-            .padding(.top, 25)
-            .padding(.bottom, 10)
-            .background(Color(.systemBackground))
         }
-        .background(Color(.systemBackground))
+        .padding(.top, 48)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground).opacity(0),
+                    Color(.systemBackground),
+                    Color(.systemBackground)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     private func tabSystemImage(for index: Int) -> String {

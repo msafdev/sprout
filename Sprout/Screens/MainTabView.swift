@@ -12,29 +12,23 @@ struct MainTabView: View {
     @State private var roadmapPath = NavigationPath()
 
     var body: some View {
-        VStack(spacing: 0) {
-            Group {
-                switch selectedTab {
-                case 0:
-                    RecollectScreen()
-                case 1:
-                    CameraScreen()
-                case 2:
-                    RoadmapScreen(navigationPath: $roadmapPath)
-                default:
-                    RecollectScreen()
-                }
+        Group {
+            // Screen Contents
+            switch selectedTab {
+            case 0:
+                RecollectScreen()
+            case 1:
+                CameraScreen(selectedTab: $selectedTab)
+            case 2:
+                RoadmapScreen(navigationPath: $roadmapPath)
+            default:
+                RecollectScreen()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            CustomTabBar(selectedTab: $selectedTab) { tappedTab in
-                if tappedTab == 2 {
-                    // Always reset roadmap navigation when roadmap tab is tapped
-                    roadmapPath = NavigationPath()
-                }
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    selectedTab = tappedTab
-                }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaInset(edge: .bottom) {
+            if selectedTab != 1 {
+                CustomTabBar(selectedTab: $selectedTab)
             }
         }
         .background(Color.appBackground)
