@@ -365,21 +365,30 @@ struct EntryView: View {
                                         .foregroundColor(.secondary)
                                 }
                             }
-                            HStack(spacing: 16) {
-                                ForEach(1...5, id: \.self) { index in
-                                    Button(action: {
-                                        selectedMood = index
-                                    }) {
-                                        Image(systemName: "leaf.fill")
-                                            .font(.system(size: 32))
-                                            .foregroundColor(selectedMood == index ? Color.oliveSprout : Color.gray.opacity(0.4))
-                                            .scaleEffect(selectedMood == index ? 1.2 : 1.0)
-                                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: selectedMood)
+                            HStack(spacing: 20) {
+                                let moodAssets = ["s_angry", "s_confused", "s_sad", "s_flat", "s_happy"]
+                                
+                                ForEach(0..<moodAssets.count, id: \.self) { index in
+                                        let isSelected = selectedMood == index + 1
+                                        
+                                        Button(action: {
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                                selectedMood = index + 1
+                                            }
+                                        }) {
+                                            Image(moodAssets[index])
+                                                .resizable()
+                                                .scaledToFit()
+                                                // Selected: 48x48, Non-selected: 36x36
+                                                .frame(width: isSelected ? 48 : 36, height: isSelected ? 48 : 36)
+                                                // Scaling effect for smooth transition
+                                                .scaleEffect(isSelected ? 1.2 : 1.0)
+                                                .opacity(isSelected ? 1.0 : 0.6) // Optional: fade non-selected
+                                        }
+                                        .frame(maxWidth: .infinity)
                                     }
-                                    .frame(maxWidth: .infinity)
                                 }
-                            }
-                            .padding(.vertical, 6)
+                                .padding(.vertical, 10)
                         }
                         .padding(20)
                         .background(Color.white)

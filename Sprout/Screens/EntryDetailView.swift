@@ -141,10 +141,13 @@ struct EntryDetailView: View {
                                         entry.emotionLevel = (entry.emotionLevel == level) ? 0 : level
                                         try? modelContext.save()
                                     }) {
-                                        emotionEmoji(for: level)
-                                            .font(.system(size: 30))
+                                        // Call the helper directly here
+                                        emotionImage(for: level)
+                                            // The modifiers inside the helper handle sizing,
+                                            // but you can add conditional scaling here:
                                             .scaleEffect(entry.emotionLevel == level ? 1.2 : 1.0)
                                             .opacity(entry.emotionLevel == level ? 1.0 : 0.45)
+                                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: entry.emotionLevel)
                                     }
                                 }
                                 Spacer()
@@ -165,13 +168,18 @@ struct EntryDetailView: View {
                         try? modelContext.save()
                         dismiss()
                     }) {
-                        Text("Delete Milestone")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Delete Milestone")
+                        }
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.red.opacity(0.08))
+                        .clipShape(Capsule())
                     }
+                    .padding(.top, 10)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 28)
@@ -217,8 +225,15 @@ struct EntryDetailView: View {
         }
     }
     
-    private func emotionEmoji(for level: Int) -> Text {
-        let emojis = ["😢", "😕", "😐", "🙂", "😄"]
-        return Text(emojis[level - 1])
+    private func emotionImage(for level: Int) -> some View {
+        let moodAssets = ["s_angry", "s_confused", "s_sad", "s_flat", "s_happy"]
+        
+        // Ensure the level is within bounds (1-5)
+        let index = max(0, min(level - 1, moodAssets.count - 1))
+        
+        return Image(moodAssets[index])
+            .resizable()
+            .scaledToFit()
+            .frame(width: 40, height: 40) // Adjust size as needed for your detail view
     }
 }

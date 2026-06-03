@@ -23,7 +23,7 @@ struct CameraScreen: View {
     
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            AppGradientBackground()
             VStack(spacing: 0) {
                 ZStack {
                     Group {
@@ -42,7 +42,33 @@ struct CameraScreen: View {
                     .aspectRatio(3/4, contentMode: .fit)
                     .frame(maxWidth: min(UIScreen.main.bounds.width - 40, 440 * 3/4))
                     .frame(maxWidth: .infinity)
-                    .background(Color(.black))
+                    .background(
+                        ZStack {
+                            LinearGradient(
+                                colors: [Color.fromHex("#1F2421"), Color.fromHex("#0F1110")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            
+                            VStack(spacing: 12) {
+                                Image(systemName: "camera.aperture")
+                                    .font(.system(size: 48, weight: .thin))
+                                    .foregroundColor(Color.appAccent.opacity(0.8))
+                                    .scaleEffect(1.0)
+                                    .padding(.bottom, 4)
+                                
+                                Text("Camera view finder")
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.white.opacity(0.6))
+                                
+                                Text("Point at your sprout or lesson activity")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.4))
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 24)
+                            }
+                        }
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -128,15 +154,15 @@ struct CameraScreen: View {
                                         .fill(Color(.systemBackground))
                                         .frame(width: 64, height: 64)
                                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                        .stroke(Color(red: 150/255, green: 180/255, blue: 80/255), lineWidth: 4)
+                                        .stroke(Color.appAccent, lineWidth: 4)
                                         .frame(width: 62, height: 62)
                                     if timerCount > 0 {
                                         Text("\(timerCount)")
                                             .font(.system(size: 24, weight: .bold))
-                                            .foregroundColor(Color(red: 150/255, green: 180/255, blue: 80/255))
+                                            .foregroundColor(Color.appAccent)
                                     } else {
                                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                            .fill(Color(red: 150/255, green: 180/255, blue: 80/255))
+                                            .fill(Color.appAccent)
                                             .frame(width: 48, height: 48)
                                     }
                                 }
@@ -146,12 +172,16 @@ struct CameraScreen: View {
                             Button(action: { camera.flipCamera() }) {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .fill(Color.blue.opacity(0.85))
+                                        .fill(Color.black.opacity(0.3))
                                         .frame(width: 56, height: 56)
                                     Image(systemName: "arrow.triangle.2.circlepath")
-                                        .font(.system(size: 20, weight: .medium))
+                                        .font(.system(size: 20, weight: .semibold))
                                         .foregroundColor(.white)
                                 }
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                )
                             }
                         }
                     }
