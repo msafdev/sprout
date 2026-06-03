@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import FoundationModels
 
 // MARK: - Main Roadmap Screen Catalog Dashboard
 struct RoadmapScreen: View {
@@ -265,6 +266,15 @@ struct RoadmapDetailView: View {
     @State private var showImageRequiredAlert = false
     @State private var selectedMilestone: Milestone? = nil
     @State private var showTitleRequired = false
+    @State private var partial: NodesData.PartiallyGenerated?
+    @State private var isAnalyzing = false
+    @State private var note: String = ""
+
+    @State private var session = LanguageModelSession(instructions: Instructions{ "You are a helpful notes assistant"
+       "When using Acronyms provide definitions for clarity"
+        "Never use slang language"
+    }
+    )
 
     var themeColor: Color { Color.fromHex(roadmap.colorHex) }
     var completedCount: Int { roadmap.milestones.filter { $0.isCompleted }.count }
@@ -377,7 +387,14 @@ struct RoadmapDetailView: View {
                         Text("Milestones")
                             .font(.title3).fontWeight(.bold)
                             .foregroundColor(.primary)
-
+                        
+                        Button(isAnalyzing ? "Analyzing..." : "Analyze note"){
+                            Task { await addMilestoneAI() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(isAnalyzing)
+                        
+                        
                         HStack(spacing: 10) {
                             TextField("Add a new milestone...", text: $newMilestoneTitle)
                                 .textFieldStyle(PlainTextFieldStyle())
@@ -499,6 +516,42 @@ struct RoadmapDetailView: View {
             roadmap.milestones.append(newMilestone)
             newMilestoneTitle = ""
             try? modelContext.save()
+        }
+    }
+    private func addMilestoneAI() async {
+        
+
+            partial = nil
+            isAnalyzing = true
+            note = roadmap.title
+        note += roadmap.goalDescription.isEmpty ? "" : " and the goal description: \(roadmap.goalDescription)."
+            note += roadmap.milestones.isEmpty ? "" :"the following actionable items are currently in this roadmap (don't repeat them and analysize them so taht you can kind off guess what the next few new nodes should be): " + roadmap.milestones.map(\.title).joined(separator: ",")+"."
+            do {
+                print(note)
+                // Ask the model to analyze the current note text
+                let stream = session.streamResponse(generating: NodesData.self) {
+                    "Analyze this note: \(note)"
+                }
+                for try await snapshot in stream {
+                    partial = snapshot.content  // Update UI with the latest partial analysis
+                }
+            } catch {
+                print("Streaming Failed \(error.localizedDescription)")
+            }
+            // Clear loading state when finished
+            isAnalyzing = false
+                                                  
+        
+//        withAnimation {
+            if let items = partial?.actionItems {
+                for item in items.compactMap({ $0 }) {
+                    let newMilestone = Milestone(title: item)
+                    newMilestone.roadmap = roadmap
+                    roadmap.milestones.append(newMilestone)
+                }
+
+                try? modelContext.save()
+//            }
         }
     }
 
