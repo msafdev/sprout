@@ -10,10 +10,10 @@ import SwiftData
 
 struct RecollectScreen: View {
     @Query(sort: \Milestone.createdAt, order: .reverse) private var milestones: [Milestone]
-    @State private var showingProfileSheet = false
-    @State private var selectedDaySelection: DaySelection? = nil
     
-    // Controlled from the parent so the calendar state updates cleanly across views
+    @State private var showingProfileSheet = false
+    // Use NavigationPath for drill-down navigation
+    @State private var navigationPath = NavigationPath()
     @State private var currentCalendarMonthDate = Date()
     
     private var completedMilestones: [Milestone] {
@@ -25,158 +25,91 @@ struct RecollectScreen: View {
     var weekCount: Int {
         let calendar = Calendar.current
         let oneWeekAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        return completedMilestones.filter { milestone in
-            guard let completedAt = milestone.completedAt else { return false }
-            return completedAt >= oneWeekAgo
-        }.count
+        return completedMilestones.filter { ($0.completedAt ?? .distantPast) >= oneWeekAgo }.count
     }
     
     var monthCount: Int {
         let calendar = Calendar.current
         let oneMonthAgo = calendar.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        return completedMilestones.filter { milestone in
-            guard let completedAt = milestone.completedAt else { return false }
-            return completedAt >= oneMonthAgo
-        }.count
+        return completedMilestones.filter { ($0.completedAt ?? .distantPast) >= oneMonthAgo }.count
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 AppGradientBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         
-                        // Weekly / Monthly Stats Card
+                        // Weekly / Monthly Stats
                         HStack(spacing: 12) {
-                            // Card 1: This week
-                            VStack(alignment: .leading, spacing: 36) {
-                                HStack(alignment: .top) {
-                                    Image(systemName: "drop.fill")
-                                        .font(.system(size: 28))
-                                        .foregroundColor(.white)
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "ellipsis")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 28, height: 28)
-                                        .background(Color.black.opacity(0.12))
-                                        .clipShape(Circle())
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("This week")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                                        .foregroundColor(.white)
-                                    
-                                    Text("\(weekCount) done")
-                                        .font(.system(size: 15, weight: .medium, design: .rounded))
-                                        .foregroundColor(.white.opacity(0.85))
-                                }
-                            }
-                            .padding(20)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.fromHex("#5F6F52"), Color.fromHex("#A9B388")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                    .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
-                            )
-                            
-                            // Card 2: This month
-                            VStack(alignment: .leading, spacing: 36) {
-                                HStack(alignment: .top) {
-                                    Image(systemName: "leaf.fill")
-                                        .font(.system(size: 28))
-                                        .foregroundColor(.white)
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "ellipsis")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 28, height: 28)
-                                        .background(Color.black.opacity(0.12))
-                                        .clipShape(Circle())
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("This month")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                                        .foregroundColor(.white)
-                                    
-                                    Text("\(monthCount) done")
-                                        .font(.system(size: 15, weight: .medium, design: .rounded))
-                                        .foregroundColor(.white.opacity(0.85))
-                                }
-                            }
-                            .padding(20)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                    .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
-                            )
+                            StatsCard(title: "This week", count: weekCount, icon: "drop.fill", colors: ["#5F6F52", "#A9B388"])
+                            StatsCard(title: "This month", count: monthCount, icon: "leaf.fill", colors: ["#8F8E2C", "#C7C670"])
                         }
                         
-                        // Fixed Unified Calendar Component (Multi-month loop history removed)
+                        // Calendar
                         MonthCalendarView(monthDate: $currentCalendarMonthDate, milestones: completedMilestones) { dayMilestones in
-                            if !dayMilestones.isEmpty {
-                                selectedDaySelection = DaySelection(date: dayMilestones.first?.completedAt ?? Date(), milestones: dayMilestones)
+                            if let date = dayMilestones.first?.completedAt {
+                                // Navigate by appending to the path
+                                navigationPath.append(DaySelection(date: date, milestones: dayMilestones))
                             }
                         }
                         .padding(20)
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .shadow(color: Color.black.opacity(0.02), radius: 10, x: 0, y: 4)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color.black.opacity(0.04), lineWidth: 1)
-                        )
+                        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.black.opacity(0.04), lineWidth: 1))
                     }
                     .padding(.horizontal, 20)
                 }
-                .background(Color.appBackground)
-                .sheet(isPresented: $showingProfileSheet) {
-                    ProfileSheetView()
-                }
-                .sheet(item: $selectedDaySelection) { selection in
-                    RecollectDetailSheet(date: selection.date, allMilestones: completedMilestones)
+            }
+            .navigationTitle("Collection")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { showingProfileSheet = true }) {
+                        Image(systemName: "person.crop.circle").font(.system(size: 24))
+                    }
                 }
             }
-            .navigationTitle("Collection") // Sets the main title
-                        .toolbar {
-                            // Places the button in the trailing (right) side
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button(action: { showingProfileSheet = true }) {
-                                    Image(systemName: "person.crop.circle")
-                                        .font(.system(size: 24))
-                                }
-                            }
-                        }
+            // Define the navigation target
+            .navigationDestination(for: DaySelection.self) { selection in
+                RecollectDetailView(date: selection.date, allMilestones: completedMilestones)
+            }
+            .sheet(isPresented: $showingProfileSheet) {
+                ProfileSheetView()
+            }
         }
     }
 }
 
-struct DaySelection: Identifiable {
-    let id = UUID()
+// MARK: - Helper View for Stats
+struct StatsCard: View {
+    let title: String
+    let count: Int
+    let icon: String
+    let colors: [String]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 36) {
+            HStack(alignment: .top) {
+                Image(systemName: icon).font(.system(size: 28)).foregroundColor(.white)
+                Spacer()
+                Image(systemName: "ellipsis").font(.system(size: 14, weight: .bold)).foregroundColor(.white)
+                    .frame(width: 28, height: 28).background(Color.black.opacity(0.12)).clipShape(Circle())
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.system(size: 18, weight: .bold, design: .rounded)).foregroundColor(.white)
+                Text("\(count) done").font(.system(size: 15, weight: .medium, design: .rounded)).foregroundColor(.white.opacity(0.85))
+            }
+        }
+        .padding(20).frame(maxWidth: .infinity)
+        .background(LinearGradient(colors: colors.map { Color.fromHex($0) }, startPoint: .topLeading, endPoint: .bottomTrailing))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.white.opacity(0.25), lineWidth: 1.5))
+    }
+}
+
+struct DaySelection: Hashable {
     let date: Date
     let milestones: [Milestone]
 }
@@ -455,242 +388,6 @@ struct ProfileSheetView: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Detail Sheet View
-struct RecollectDetailSheet: View {
-    let allMilestones: [Milestone]
-    @State private var currentDate: Date
-    @State private var selectedIndex = 0
-    private let calendar = Calendar.current
-
-    init(date: Date, allMilestones: [Milestone]) {
-        self.allMilestones = allMilestones
-        self._currentDate = State(initialValue: date)
-    }
-
-    private var datesWithMilestones: [Date] {
-        let uniqueDays = Set(
-            allMilestones.compactMap { $0.completedAt }
-                .map { calendar.startOfDay(for: $0) }
-        )
-        return uniqueDays.sorted()
-    }
-
-    private var currentDateIndex: Int? {
-        datesWithMilestones.firstIndex { calendar.isDate($0, inSameDayAs: currentDate) }
-    }
-
-    private var currentDayMilestones: [Milestone] {
-        allMilestones.filter { milestone in
-            guard let completedAt = milestone.completedAt else { return false }
-            return calendar.isDate(completedAt, inSameDayAs: currentDate)
-        }
-    }
-
-    private var activeMilestone: Milestone? {
-        guard !currentDayMilestones.isEmpty else { return nil }
-        let safeIndex = min(max(selectedIndex, 0), currentDayMilestones.count - 1)
-        return currentDayMilestones[safeIndex]
-    }
-
-    private var formattedDate: String {
-        PresentationHelpers.formattedDateOrdinal(currentDate)
-    }
-
-    private func emotionEmoji(for level: Int) -> String {
-        let moodAssets = ["s_angry", "s_confused", "s_sad", "s_flat", "s_happy"]
-        let cleanIndex = max(0, min(level - 1, moodAssets.count - 1))
-        return moodAssets[cleanIndex]
-    }
-
-    private func thumbnailSize(for count: Int) -> CGFloat {
-        switch count {
-        case 1: return 72
-        case 2: return 68
-        case 3: return 60
-        case 4: return 52
-        default: return 44
-        }
-    }
-
-    private var hasPreviousDate: Bool {
-        guard let idx = currentDateIndex else { return false }
-        return idx > 0
-    }
-
-    private var hasNextDate: Bool {
-        guard let idx = currentDateIndex else { return false }
-        return idx < datesWithMilestones.count - 1
-    }
-
-    private func moveToPreviousDate() {
-        guard let idx = currentDateIndex, idx > 0 else { return }
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            currentDate = datesWithMilestones[idx - 1]
-            selectedIndex = 0
-        }
-    }
-
-    private func moveToNextDate() {
-        guard let idx = currentDateIndex, idx < datesWithMilestones.count - 1 else { return }
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            currentDate = datesWithMilestones[idx + 1]
-            selectedIndex = 0
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Spacer().frame(height: 12)
-
-            // Date navigation header
-            HStack {
-                Button(action: moveToPreviousDate) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color.gray.opacity(0.12)))
-                }
-                .disabled(!hasPreviousDate)
-                .opacity(hasPreviousDate ? 1 : 0.3)
-
-                Spacer()
-
-                VStack(spacing: 2) {
-                    Text(formattedDate)
-                        .font(.headline).fontWeight(.bold)
-                        .foregroundColor(.black)
-                    Text("\(currentDayMilestones.count) finished lesson\(currentDayMilestones.count == 1 ? "" : "s")")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
-
-                Spacer()
-
-                Button(action: moveToNextDate) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color.gray.opacity(0.12)))
-                }
-                .disabled(!hasNextDate)
-                .opacity(hasNextDate ? 1 : 0.3)
-            }
-            .padding(.horizontal, 24)
-
-            // Main photo card
-            ZStack(alignment: .topLeading) {
-                if let data = activeMilestone?.imageData,
-                   let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(4/3, contentMode: .fill)
-                        .frame(maxWidth: .infinity)
-                        .clipped()
-                } else {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color.gray.opacity(0.15))
-                        .frame(maxWidth: .infinity)
-                        .aspectRatio(4/3, contentMode: .fill)
-                }
-
-                LinearGradient(
-                    colors: [Color.black.opacity(0.65), Color.black.opacity(0.2), Color.clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(maxWidth: .infinity)
-                .frame(height: 220)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(activeMilestone?.title ?? "Untitled")
-                        .font(.title3).fontWeight(.bold)
-                        .foregroundColor(.white)
-                    Text(activeMilestone?.content ?? "No details available.")
-                        .font(.footnote)
-                        .foregroundColor(.white.opacity(0.85))
-                        .lineLimit(4)
-                        .multilineTextAlignment(.leading)
-                }
-                .padding(24)
-
-                // Emotion Indicator (FIXED)
-                                if let level = activeMilestone?.emotionLevel {
-                                    VStack {
-                                        Spacer()
-                                        HStack {
-                                            Image(emotionEmoji(for: level))
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 42, height: 42)
-                                                .padding(.leading, 20)
-                                                .padding(.bottom, 16)
-                                            Spacer()
-                                        }
-                                    }
-                                }
-            }
-            .frame(maxWidth: .infinity)
-            .aspectRatio(4/3, contentMode: .fit)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color(.systemGray6))
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 5)
-            .padding(.horizontal, 24)
-
-            // Thumbnail switcher row
-            if currentDayMilestones.count > 1 {
-                let tSize = thumbnailSize(for: currentDayMilestones.count)
-                HStack(spacing: 12) {
-                    ForEach(0..<currentDayMilestones.count, id: \.self) { index in
-                        let milestone = currentDayMilestones[index]
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedIndex = index
-                            }
-                        }) {
-                            if let data = milestone.imageData,
-                               let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: tSize, height: tSize)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .stroke(Color.appAccent, lineWidth: selectedIndex == index ? 3 : 0)
-                                    )
-                                    .shadow(color: Color.black.opacity(0.06), radius: 3)
-                            } else {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color.gray.opacity(0.15))
-                                    .frame(width: tSize, height: tSize)
-                                    .overlay(
-                                        Image(systemName: "photo")
-                                            .foregroundColor(.gray)
-                                    )
-                            }
-                        }
-                        .buttonStyle(EmptyTabButtonStyle())
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 10)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.appBackground)
-        .presentationDetents([.fraction(currentDayMilestones.count > 1 ? 0.81 : 0.70)])
-        .presentationDragIndicator(.visible)
     }
 }
 
