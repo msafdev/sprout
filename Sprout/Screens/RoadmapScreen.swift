@@ -308,8 +308,6 @@ struct RoadmapDetailView: View {
             // 2. Main Scrollable Content
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Spacer pushes content below the fixed header
-                    Spacer().frame(height: 90)
 
                     // Header Goal Info Workspace Card
                     VStack(alignment: .leading, spacing: 14) {
@@ -436,6 +434,11 @@ struct RoadmapDetailView: View {
                 }
                 .padding(20)
             }
+            
+            // Automatically adds space for the header without manual guesswork
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Color.clear.frame(height: 70) // Adjust this to match your header's visual height
+            }
 
             // 3. Fixed Header (Kept at top of ZStack)
             HStack {
@@ -486,6 +489,7 @@ struct RoadmapDetailView: View {
             Text("Add a photo in the entry detail before marking this lesson as finished.")
         }
     }
+    
     private func addMilestone() {
         let cleanTitle = newMilestoneTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
@@ -565,7 +569,7 @@ struct EntryRowView: View {
             if milestone.emotionLevel > 0 {
                 Image(emotionEmoji(for: milestone.emotionLevel)) // Uses the function to get the asset name
                     .resizable()
-                    .scaledToFit()
+                    .scaledToFill()
                     .frame(width: 22, height: 22) // Matches your previous size
             }
 

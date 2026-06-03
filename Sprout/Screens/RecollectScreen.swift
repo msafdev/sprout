@@ -41,139 +41,136 @@ struct RecollectScreen: View {
     }
     
     var body: some View {
-        ZStack {
-            AppGradientBackground()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Header Row
-                    HStack {
-                        Text("Collection")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(.black)
+        NavigationStack {
+            ZStack {
+                AppGradientBackground()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
                         
-                        Spacer()
-                        
-                        Button(action: { showingProfileSheet = true }) {
-                            Image(systemName: "person.crop.circle")
-                                .font(.system(size: 28))
-                                .foregroundColor(.black.opacity(0.8))
-                        }
-                    }
-                    .padding(.top, 20)
-                    
-                    // Weekly / Monthly Stats Card
-                    HStack(spacing: 12) {
-                        // Card 1: This week
-                        VStack(alignment: .leading, spacing: 36) {
-                            HStack(alignment: .top) {
-                                Image(systemName: "drop.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundColor(.white)
+                        // Weekly / Monthly Stats Card
+                        HStack(spacing: 12) {
+                            // Card 1: This week
+                            VStack(alignment: .leading, spacing: 36) {
+                                HStack(alignment: .top) {
+                                    Image(systemName: "drop.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.white)
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "ellipsis")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 28, height: 28)
+                                        .background(Color.black.opacity(0.12))
+                                        .clipShape(Circle())
+                                }
                                 
-                                Spacer()
-                                
-                                Image(systemName: "ellipsis")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 28, height: 28)
-                                    .background(Color.black.opacity(0.12))
-                                    .clipShape(Circle())
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("This week")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .foregroundColor(.white)
+                                    
+                                    Text("\(weekCount) done")
+                                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                                        .foregroundColor(.white.opacity(0.85))
+                                }
                             }
+                            .padding(20)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.fromHex("#5F6F52"), Color.fromHex("#A9B388")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
+                            )
                             
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("This week")
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundColor(.white)
+                            // Card 2: This month
+                            VStack(alignment: .leading, spacing: 36) {
+                                HStack(alignment: .top) {
+                                    Image(systemName: "leaf.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.white)
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "ellipsis")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 28, height: 28)
+                                        .background(Color.black.opacity(0.12))
+                                        .clipShape(Circle())
+                                }
                                 
-                                Text("\(weekCount) done")
-                                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                                    .foregroundColor(.white.opacity(0.85))
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("This month")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .foregroundColor(.white)
+                                    
+                                    Text("\(monthCount) done")
+                                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                                        .foregroundColor(.white.opacity(0.85))
+                                }
+                            }
+                            .padding(20)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
+                            )
+                        }
+                        
+                        // Fixed Unified Calendar Component (Multi-month loop history removed)
+                        MonthCalendarView(monthDate: $currentCalendarMonthDate, milestones: completedMilestones) { dayMilestones in
+                            if !dayMilestones.isEmpty {
+                                selectedDaySelection = DaySelection(date: dayMilestones.first?.completedAt ?? Date(), milestones: dayMilestones)
                             }
                         }
                         .padding(20)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.fromHex("#5F6F52"), Color.fromHex("#A9B388")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                        .shadow(color: Color.black.opacity(0.02), radius: 10, x: 0, y: 4)
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
-                        )
-                        
-                        // Card 2: This month
-                        VStack(alignment: .leading, spacing: 36) {
-                            HStack(alignment: .top) {
-                                Image(systemName: "leaf.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundColor(.white)
-                                
-                                Spacer()
-                                
-                                Image(systemName: "ellipsis")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 28, height: 28)
-                                    .background(Color.black.opacity(0.12))
-                                    .clipShape(Circle())
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("This month")
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundColor(.white)
-                                
-                                Text("\(monthCount) done")
-                                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                                    .foregroundColor(.white.opacity(0.85))
-                            }
-                        }
-                        .padding(20)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
+                                .stroke(Color.black.opacity(0.04), lineWidth: 1)
                         )
                     }
-                    
-                    // Fixed Unified Calendar Component (Multi-month loop history removed)
-                    MonthCalendarView(monthDate: $currentCalendarMonthDate, milestones: completedMilestones) { dayMilestones in
-                        if !dayMilestones.isEmpty {
-                            selectedDaySelection = DaySelection(date: dayMilestones.first?.completedAt ?? Date(), milestones: dayMilestones)
-                        }
-                    }
-                    .padding(20)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.02), radius: 10, x: 0, y: 4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.black.opacity(0.04), lineWidth: 1)
-                    )
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
+                .background(Color.appBackground)
+                .sheet(isPresented: $showingProfileSheet) {
+                    ProfileSheetView()
+                }
+                .sheet(item: $selectedDaySelection) { selection in
+                    RecollectDetailSheet(date: selection.date, allMilestones: completedMilestones)
+                }
             }
-            .background(Color.appBackground)
-            .sheet(isPresented: $showingProfileSheet) {
-                ProfileSheetView()
-            }
-            .sheet(item: $selectedDaySelection) { selection in
-                RecollectDetailSheet(date: selection.date, allMilestones: completedMilestones)
-            }
+            .navigationTitle("Collection") // Sets the main title
+                        .toolbar {
+                            // Places the button in the trailing (right) side
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button(action: { showingProfileSheet = true }) {
+                                    Image(systemName: "person.crop.circle")
+                                        .font(.system(size: 24))
+                                }
+                            }
+                        }
         }
     }
 }
@@ -502,9 +499,10 @@ struct RecollectDetailSheet: View {
         PresentationHelpers.formattedDateOrdinal(currentDate)
     }
 
-    private var emotionEmoji: String {
-        guard let level = activeMilestone?.emotionLevel, level > 0 else { return "" }
-        return ["😢", "😕", "😐", "🙂", "😄"][level - 1]
+    private func emotionEmoji(for level: Int) -> String {
+        let moodAssets = ["s_angry", "s_confused", "s_sad", "s_flat", "s_happy"]
+        let cleanIndex = max(0, min(level - 1, moodAssets.count - 1))
+        return moodAssets[cleanIndex]
     }
 
     private func thumbnailSize(for count: Int) -> CGFloat {
@@ -620,18 +618,21 @@ struct RecollectDetailSheet: View {
                 }
                 .padding(24)
 
-                if !emotionEmoji.isEmpty {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Text(emotionEmoji)
-                                .font(.system(size: 42))
-                                .padding(.leading, 20)
-                                .padding(.bottom, 16)
-                            Spacer()
-                        }
-                    }
-                }
+                // Emotion Indicator (FIXED)
+                                if let level = activeMilestone?.emotionLevel {
+                                    VStack {
+                                        Spacer()
+                                        HStack {
+                                            Image(emotionEmoji(for: level))
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 42, height: 42)
+                                                .padding(.leading, 20)
+                                                .padding(.bottom, 16)
+                                            Spacer()
+                                        }
+                                    }
+                                }
             }
             .frame(maxWidth: .infinity)
             .aspectRatio(4/3, contentMode: .fit)
