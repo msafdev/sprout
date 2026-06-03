@@ -14,6 +14,7 @@ struct EntryDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var selectedImage: PhotosPickerItem? = nil
+    @FocusState private var isExplanationFocused: Bool
     
     private var entryImage: Image? {
         guard let data = entry.imageData,
@@ -24,79 +25,94 @@ struct EntryDetailView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Main content card
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Title
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Lesson Title")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.gray)
-
-                            TextField("Entry Title", text: $entry.title, axis: .vertical)
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .lineLimit(1...)
-                        }
-
-                        Divider()
-
-                        // Image/Photo Section
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Photo")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.gray)
-
-                            ZStack(alignment: .topTrailing) {
-                                PhotosPicker(selection: $selectedImage, matching: .images, photoLibrary: .shared()) {
-                                    if let entryImage {
-                                        entryImage
-                                            .resizable()
-                                            .aspectRatio(4/3, contentMode: .fill)
-                                            .frame(maxWidth: .infinity)
-                                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(Color.appBackground)
-                                            .aspectRatio(4/3, contentMode: .fit)
-                                            .overlay(
-                                                VStack(spacing: 10) {
-                                                    Image(systemName: "plus.circle")
-                                                        .font(.system(size: 36))
-                                                        .foregroundColor(.gray.opacity(0.6))
-                                                    Text("Add Photo")
-                                                        .font(.subheadline)
-                                                        .foregroundColor(.gray.opacity(0.6))
-                                                }
-                                            )
-                                    }
-                                }
-                                .onChange(of: selectedImage) { _, newItem in
-                                    guard let item = newItem else { return }
-                                    Task {
-                                        if let data = try? await item.loadTransferable(type: Data.self) {
-                                            entry.imageData = data
-                                            try? modelContext.save()
+        ZStack(alignment: .top) {
+            Color.appBackground.ignoresSafeArea()
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    Spacer().frame(height: 105) // push content below top bar
+                    
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Main content card
+                        VStack(alignment: .leading, spacing: 20) {
+                            // Title
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Lesson Title")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.gray)
+                                
+                                TextField("Entry Title", text: $entry.title, axis: .vertical)
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .lineLimit(1...)
+                            }
+                            
+                            Divider()
+                            
+                            // Image/Photo Section
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Photo")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.gray)
+                                
+                                ZStack(alignment: .topTrailing) {
+                                    PhotosPicker(selection: $selectedImage, matching: .images, photoLibrary: .shared()) {
+                                        if let entryImage {
+                                            entryImage
+                                                .resizable()
+                                                .aspectRatio(4/3, contentMode: .fill)
+                                                .frame(maxWidth: .infinity)
+                                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .fill(Color.appBackground)
+                                                .aspectRatio(4/3, contentMode: .fit)
+                                                .overlay(
+                                                    VStack(spacing: 10) {
+                                                        Image(systemName: "plus.circle")
+                                                            .font(.system(size: 36))
+                                                            .foregroundColor(.gray.opacity(0.6))
+                                                        Text("Add Photo")
+                                                            .font(.subheadline)
+                                                            .foregroundColor(.gray.opacity(0.6))
+                                                    }
+                                                )
                                         }
                                     }
-                                }
-
-                                if entry.imageData != nil {
-                                    Button(action: {
-                                        entry.imageData = nil
-                                        selectedImage = nil
-                                        try? modelContext.save()
-                                    }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.system(size: 26))
-                                            .foregroundStyle(.white, Color.black.opacity(0.55))
+                                    .onChange(of: selectedImage) { _, newItem in
+                                        guard let item = newItem else { return }
+                                        Task {
+                                            if let data = try? await item.loadTransferable(type: Data.self) {
+                                                entry.imageData = data
+                                                try? modelContext.save()
+                                            }
+                                        }
                                     }
-                                    .padding(8)
+                                    
+                                    if entry.imageData != nil {
+                                        Button(action: {
+                                            entry.imageData = nil
+                                            selectedImage = nil
+                                            try? modelContext.save()
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.system(size: 26))
+                                                .foregroundStyle(.white, Color.black.opacity(0.55))
+                                        }
+                                        .padding(8)
+                                    }
+                                }
+                            }
+                            .onChange(of: selectedImage) { _, newItem in
+                                guard let item = newItem else { return }
+                                Task {
+                                    if let data = try? await item.loadTransferable(type: Data.self) {
+                                        entry.imageData = data
+                                        try? modelContext.save()
+                                    }
                                 }
                             }
                         }
@@ -149,8 +165,8 @@ struct EntryDetailView: View {
                                             .opacity(entry.emotionLevel == level ? 1.0 : 0.45)
                                             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: entry.emotionLevel)
                                     }
+                                    Spacer()
                                 }
-                                Spacer()
                             }
                         }
                     }
@@ -184,8 +200,8 @@ struct EntryDetailView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 28)
             }
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
+            
+            // Blurred Sticky Header
             HStack {
                 Button(action: { dismiss() }) {
                     Image(systemName: "chevron.left")
@@ -195,9 +211,9 @@ struct EntryDetailView: View {
                         .background(Color.primary.opacity(0.08))
                         .clipShape(Circle())
                 }
-
+                
                 Spacer()
-
+                
                 Button(action: {
                     try? modelContext.save()
                     dismiss()
@@ -211,11 +227,19 @@ struct EntryDetailView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 8)
-            .background(Color.appBackground)
+            .padding(.top, 50)
+            .padding(.bottom, 12)
+            .background(.ultraThinMaterial)
+            .overlay(
+                VStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.06))
+                        .frame(height: 1)
+                }
+            )
+            .ignoresSafeArea(edges: .top)
         }
-        .background(Color.appBackground)
         .navigationBarHidden(true)
         .onChange(of: entry.title) { _, _ in
             try? modelContext.save()

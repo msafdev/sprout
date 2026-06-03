@@ -14,6 +14,9 @@ struct EntryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
+    // --- Navigation ---
+    @State private var navigationPath = NavigationPath()
+    
     // --- SwiftData Query ---
     @Query(sort: \Roadmap.createdAt, order: .reverse) private var existingRoadmaps: [Roadmap]
     
@@ -32,6 +35,7 @@ struct EntryView: View {
     
     @State private var isRoadmapDropdownFocused: Bool = false
     @State private var isMilestoneDropdownFocused: Bool = false
+    @FocusState private var isExplanationFocused: Bool
     
     // --- Validation Helper ---
     private var isFormValid: Bool {
@@ -420,8 +424,46 @@ struct EntryView: View {
                     .padding(.bottom, 40)
                 }
             }
+            .ignoresSafeArea(edges: .top)
+            
+            // --- TOP NAVIGATION BAR ---
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 38, height: 38)
+                        .background(Color.appAccent)
+                        .clipShape(Circle())
+                }
+                Spacer()
+                VStack(spacing: 2) {
+                    Text(selectedRoadmap == nil ? "Capture & Save" : "Log Progress")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.black)
+                }
+                Spacer()
+                Color.clear.frame(width: 38, height: 38)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 12)
+            .background(Color.appBackground)
+            .overlay(
+                VStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.06))
+                        .frame(height: 1)
+                }
+            )
+            .ignoresSafeArea(edges: .top)
+            }
+            .navigationBarHidden(true)
+            .navigationDestination(for: Roadmap.self) { roadmap in
+                RoadmapDetailView(roadmap: roadmap)
+            }
         }
-        .navigationBarHidden(true)
     }
     
     // --- PERSISTENCE HANDLER ACTION ---
@@ -481,6 +523,17 @@ struct EntryView: View {
         
         // 3. Clear our sheet context or overlay wrappers
         onSaveComplete()
+    }
+    
+    private func moodColor(for index: Int) -> Color {
+        switch index {
+        case 1: return Color.fromHex("#C5C475") // Light sprout green-yellow
+        case 2: return Color.fromHex("#AFAE3C") // Soft olive green
+        case 3: return Color.appAccent          // Primary green (#9F9E32)
+        case 4: return Color.fromHex("#7F8E3C") // Mid-leaf green
+        case 5: return Color.fromHex("#567838") // Rich forest green
+        default: return Color.appAccent
+        }
     }
     
     private func hideKeyboard() {

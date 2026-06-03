@@ -278,7 +278,7 @@ struct MonthCalendarView: View {
             let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(0..<firstWeekdayOffset, id: \.self) { _ in
-                    Spacer()
+                    Color.clear
                         .frame(height: 44)
                 }
                 
@@ -293,6 +293,11 @@ struct MonthCalendarView: View {
                     ) {
                         onSelectDay(dateMilestones)
                     }
+                }
+                
+                ForEach(0..<trailingPlaceholderCount, id: \.self) { _ in
+                    Color.clear
+                        .frame(height: 44)
                 }
             }
         }
@@ -467,7 +472,7 @@ struct RecollectDetailSheet: View {
     @State private var currentDate: Date
     @State private var selectedIndex = 0
     private let calendar = Calendar.current
-
+    
     init(date: Date, allMilestones: [Milestone]) {
         self.allMilestones = allMilestones
         self._currentDate = State(initialValue: date)
@@ -480,7 +485,7 @@ struct RecollectDetailSheet: View {
         )
         return uniqueDays.sorted()
     }
-
+    
     private var currentDateIndex: Int? {
         datesWithMilestones.firstIndex { calendar.isDate($0, inSameDayAs: currentDate) }
     }
@@ -491,22 +496,22 @@ struct RecollectDetailSheet: View {
             return calendar.isDate(completedAt, inSameDayAs: currentDate)
         }
     }
-
+    
     private var activeMilestone: Milestone? {
         guard !currentDayMilestones.isEmpty else { return nil }
         let safeIndex = min(max(selectedIndex, 0), currentDayMilestones.count - 1)
         return currentDayMilestones[safeIndex]
     }
-
+    
     private var formattedDate: String {
         PresentationHelpers.formattedDateOrdinal(currentDate)
     }
-
+    
     private var emotionEmoji: String {
         guard let level = activeMilestone?.emotionLevel, level > 0 else { return "" }
         return ["😢", "😕", "😐", "🙂", "😄"][level - 1]
     }
-
+    
     private func thumbnailSize(for count: Int) -> CGFloat {
         switch count {
         case 1: return 72
@@ -516,17 +521,17 @@ struct RecollectDetailSheet: View {
         default: return 44
         }
     }
-
+    
     private var hasPreviousDate: Bool {
         guard let idx = currentDateIndex else { return false }
         return idx > 0
     }
-
+    
     private var hasNextDate: Bool {
         guard let idx = currentDateIndex else { return false }
         return idx < datesWithMilestones.count - 1
     }
-
+    
     private func moveToPreviousDate() {
         guard let idx = currentDateIndex, idx > 0 else { return }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -534,7 +539,7 @@ struct RecollectDetailSheet: View {
             selectedIndex = 0
         }
     }
-
+    
     private func moveToNextDate() {
         guard let idx = currentDateIndex, idx < datesWithMilestones.count - 1 else { return }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -542,11 +547,11 @@ struct RecollectDetailSheet: View {
             selectedIndex = 0
         }
     }
-
+    
     var body: some View {
         VStack(spacing: 20) {
             Spacer().frame(height: 12)
-
+            
             // Date navigation header
             HStack {
                 Button(action: moveToPreviousDate) {
@@ -558,9 +563,9 @@ struct RecollectDetailSheet: View {
                 }
                 .disabled(!hasPreviousDate)
                 .opacity(hasPreviousDate ? 1 : 0.3)
-
+                
                 Spacer()
-
+                
                 VStack(spacing: 2) {
                     Text(formattedDate)
                         .font(.headline).fontWeight(.bold)
@@ -569,9 +574,9 @@ struct RecollectDetailSheet: View {
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
-
+                
                 Spacer()
-
+                
                 Button(action: moveToNextDate) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 16, weight: .bold))
@@ -583,7 +588,7 @@ struct RecollectDetailSheet: View {
                 .opacity(hasNextDate ? 1 : 0.3)
             }
             .padding(.horizontal, 24)
-
+            
             // Main photo card
             ZStack(alignment: .topLeading) {
                 if let data = activeMilestone?.imageData,
@@ -599,7 +604,7 @@ struct RecollectDetailSheet: View {
                         .frame(maxWidth: .infinity)
                         .aspectRatio(4/3, contentMode: .fill)
                 }
-
+                
                 LinearGradient(
                     colors: [Color.black.opacity(0.65), Color.black.opacity(0.2), Color.clear],
                     startPoint: .top,
@@ -607,7 +612,7 @@ struct RecollectDetailSheet: View {
                 )
                 .frame(maxWidth: .infinity)
                 .frame(height: 220)
-
+                
                 VStack(alignment: .leading, spacing: 6) {
                     Text(activeMilestone?.title ?? "Untitled")
                         .font(.title3).fontWeight(.bold)
@@ -683,7 +688,7 @@ struct RecollectDetailSheet: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 10)
             }
-
+            
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -242,8 +242,12 @@ struct RoadmapCardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(height: 200)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.07), radius: 10, x: 0, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.black.opacity(0.02), radius: 10, x: 0, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.black.opacity(0.04), lineWidth: 1)
+        )
         .contextMenu {
             Button(role: .destructive) {
                 modelContext.delete(roadmap)
@@ -453,9 +457,9 @@ struct RoadmapDetailView: View {
                         .background(Color.appBackground.opacity(0.8))
                         .clipShape(Circle())
                 }
-
+ 
                 Spacer()
-
+ 
                 Button(action: {
                     if roadmap.title.trimmingCharacters(in: .whitespaces).isEmpty {
                         withAnimation { showTitleRequired = true }
