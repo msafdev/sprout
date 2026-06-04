@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct RecollectScreen: View {
     @Query(sort: \Milestone.createdAt, order: .reverse) private var milestones: [Milestone]
@@ -55,7 +56,7 @@ struct RecollectScreen: View {
                             }
                         }
                         .padding(20)
-                        .background(Color.white)
+                        .background(Color.appCard)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .shadow(color: Color.black.opacity(0.02), radius: 10, x: 0, y: 4)
                         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.black.opacity(0.04), lineWidth: 1))
@@ -336,58 +337,127 @@ struct CalendarDayCell: View {
 // MARK: - Profile & Settings View
 struct ProfileSheetView: View {
     @Environment(\.dismiss) private var dismiss
-    
+    @Environment(\.colorScheme) private var colorScheme
+
+    @AppStorage("isDarkMode") private var isDarkMode = false
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = false
+    @AppStorage("reduceMotion") private var reduceMotion = false
+
+    @State private var showNotificationDeniedAlert = false
+
     var body: some View {
         NavigationStack {
             List {
-                Section(header: Text("Account")) {
-                    HStack {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Circle().fill(Color.blue))
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Salman Alfarisi")
-                                .font(.headline)
-                            Text("salman@sprout.com")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                // MARK: Preferences
+                Section(header: Text("Preferences")) {
+                    Toggle(isOn: $isDarkMode) {
+                        Label("Dark Mode", systemImage: "moon.fill")
+                    }
+                    .onChange(of: isDarkMode) { _, enabled in
+                        setAppColorScheme(dark: enabled)
+                    }
+
+                    Toggle(isOn: $reduceMotion) {
+                        Label("Reduce Motion", systemImage: "hand.raised.fill")
+                    }
+
+                    Toggle(isOn: $notificationsEnabled) {
+                        Label("Daily Reminder", systemImage: "bell.fill")
+                    }
+                    .onChange(of: notificationsEnabled) { _, enabled in
+                        if enabled {
+                            requestAndScheduleNotification()
+                        } else {
+                            cancelDailyNotification()
                         }
                     }
-                    .padding(.vertical, 4)
                 }
-                
-                Section(header: Text("Preferences")) {
-                    HStack {
-                        Label("Notifications", systemImage: "bell.fill")
-                        Spacer()
-                        Toggle("", isOn: .constant(true)).labelsHidden()
-                    }
-                    
-                    HStack {
-                        Label("Dark Mode", systemImage: "moon.fill")
-                        Spacer()
-                        Toggle("", isOn: .constant(false)).labelsHidden()
-                    }
-                }
-                
+
+                // MARK: About
                 Section(header: Text("About")) {
                     LabeledContent("App Version", value: "1.0.0")
-                    LabeledContent("Developer", value: "Salman Alfarisi")
+                    LabeledContent("Developer", value: "Team 18")
                 }
             }
             .navigationTitle("Profile & Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
+                    Button("Done") { dismiss() }
+                }
+            }
+            .alert("Notifications Disabled", isPresented: $showNotificationDeniedAlert) {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
                     }
+                }
+                Button("Cancel", role: .cancel) {
+                    notificationsEnabled = false
+                }
+            } message: {
+                Text("Please enable notifications for Sprout in Settings to receive daily reminders.")
+            }
+        }
+        .preferredColorScheme(isDarkMode ? .dark : .light)
+    }
+
+    // MARK: - Notification Helpers
+
+    private func requestAndScheduleNotification() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            DispatchQueue.main.async {
+                if granted {
+                    scheduleDailyNotification()
+                } else {
+                    notificationsEnabled = false
+                    showNotificationDeniedAlert = true
                 }
             }
         }
+    }
+
+    private func scheduleDailyNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "Sprout 🌱"
+        content.body = "Don't forget to water your plants!"
+        content.sound = .default
+
+        var components = DateComponents()
+        components.hour = 8
+        components.minute = 0
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        let request = UNNotificationRequest(identifier: "sprout.daily.reminder", content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func cancelDailyNotification() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["sprout.daily.reminder"])
+    }
+
+    // MARK: - Dark Mode Helper
+
+    private func setAppColorScheme(dark: Bool) {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
+        scene.windows.forEach { $0.overrideUserInterfaceStyle = dark ? .dark : .light }
+    }
+}
+
+struct AccessibilityIdeaRow: View {
+    let icon: String
+    let title: String
+    let description: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: icon)
+                .font(.subheadline).fontWeight(.semibold)
+            Text(description)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 4)
     }
 }
 

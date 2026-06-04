@@ -79,7 +79,7 @@ struct OnboardingScreen: View {
                 } label: {
                     Text("Skip")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.black.opacity(0.38))
+                        .foregroundStyle(Color.appPrimary.opacity(0.38))
                         .padding(.vertical, 18)
                 }
 
@@ -111,13 +111,13 @@ struct OnboardingPageView: View {
             VStack(spacing: 14) {
                 Text(page.title)
                     .font(.system(size: 38, weight: .black))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(Color.appPrimary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
 
                 Text(page.subtitle)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(.black.opacity(0.50))
+                    .foregroundStyle(Color.appPrimary.opacity(0.50))
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
                     .padding(.horizontal, 8)

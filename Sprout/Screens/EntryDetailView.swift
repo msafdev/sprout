@@ -141,13 +141,7 @@ struct EntryDetailView: View {
                                         entry.emotionLevel = (entry.emotionLevel == level) ? 0 : level
                                         try? modelContext.save()
                                     }) {
-                                        // Call the helper directly here
-                                        emotionImage(for: level)
-                                            // The modifiers inside the helper handle sizing,
-                                            // but you can add conditional scaling here:
-                                            .scaleEffect(entry.emotionLevel == level ? 1.2 : 1.0)
-                                            .opacity(entry.emotionLevel == level ? 1.0 : 0.45)
-                                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: entry.emotionLevel)
+                                        emotionImage(for: level, isSelected: entry.emotionLevel == level)
                                     }
                                 }
                                 Spacer()
@@ -155,7 +149,7 @@ struct EntryDetailView: View {
                         }
                     }
                     .padding(20)
-                    .background(Color.white)
+                    .background(Color.appCard)
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
 
@@ -225,15 +219,15 @@ struct EntryDetailView: View {
         }
     }
     
-    private func emotionImage(for level: Int) -> some View {
+    private func emotionImage(for level: Int, isSelected: Bool = false) -> some View {
         let moodAssets = ["s_angry", "s_confused", "s_sad", "s_flat", "s_happy"]
-        
-        // Ensure the level is within bounds (1-5)
         let index = max(0, min(level - 1, moodAssets.count - 1))
-        
         return Image(moodAssets[index])
             .resizable()
             .scaledToFit()
-            .frame(width: 40, height: 40) // Adjust size as needed for your detail view
+            .frame(width: 40, height: 40)
+            .scaleEffect(isSelected ? 1.2 : 1.0)
+            .opacity(isSelected ? 1.0 : 0.45)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
     }
 }
