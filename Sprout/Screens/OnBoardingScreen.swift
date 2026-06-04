@@ -65,7 +65,7 @@ struct OnboardingScreen: View {
                 } label: {
                     Text(selectedPage == pages.count - 1 ? "Get Started" : "Continue")
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color(UIColor.systemBackground))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 17)
                         .background(onboardingAccent)
@@ -97,12 +97,17 @@ struct OnboardingPage {
 
 struct OnboardingPageView: View {
     let page: OnboardingPage
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var effectiveImageName: String {
+        colorScheme == .dark ? "\(page.imageName) dark mode" : page.imageName
+    }
 
     var body: some View {
         VStack(spacing: 30) {
             Spacer()
 
-            Image(page.imageName)
+            Image(effectiveImageName)
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: .infinity)
@@ -137,7 +142,7 @@ struct OnboardingPageIndicator: View {
         HStack(spacing: 8) {
             ForEach(0..<pageCount, id: \.self) { index in
                 Capsule()
-                    .fill(index == selectedPage ? onboardingAccent : Color.black.opacity(0.16))
+                    .fill(index == selectedPage ? onboardingAccent : Color.primary.opacity(0.25))
                     .frame(width: index == selectedPage ? 28 : 9, height: 9)
                     .animation(.snappy(duration: 0.22), value: selectedPage)
             }

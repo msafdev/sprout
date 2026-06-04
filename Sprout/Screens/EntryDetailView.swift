@@ -13,6 +13,7 @@ struct EntryDetailView: View {
     @Bindable var entry: Milestone
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedImage: PhotosPickerItem? = nil
     
     @State private var showDeleteConfirmation = false
@@ -197,7 +198,7 @@ struct EntryDetailView: View {
                     }) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(colorScheme == .dark ? .black : .white)
                             .frame(width: 44, height: 44)
                             .background(Color.appAccent)
                             .clipShape(Circle())

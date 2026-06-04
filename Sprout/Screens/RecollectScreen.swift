@@ -95,8 +95,6 @@ struct StatsCard: View {
             HStack(alignment: .top) {
                 Image(systemName: icon).font(.system(size: 28)).foregroundColor(.white)
                 Spacer()
-                Image(systemName: "ellipsis").font(.system(size: 14, weight: .bold)).foregroundColor(.white)
-                    .frame(width: 28, height: 28).background(Color.black.opacity(0.12)).clipShape(Circle())
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.system(size: 18, weight: .bold, design: .rounded)).foregroundColor(.white)

@@ -12,6 +12,7 @@ import FoundationModels
 // MARK: - Main Roadmap Screen Catalog Dashboard
 struct RoadmapScreen: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \Roadmap.createdAt, order: .reverse) private var roadmaps: [Roadmap]
 
     @Binding var navigationPath: NavigationPath
@@ -50,7 +51,7 @@ struct RoadmapScreen: View {
                         }) {
                             Image(systemName: "plus")
                                 .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(Color(UIColor.systemBackground))
                                 .frame(width: 44, height: 44)
                                 .background(Color.appAccent)
                                 .clipShape(Circle())
@@ -135,15 +136,16 @@ struct RoadmapScreen: View {
 struct StatItemView: View {
     let label: String
     let value: String
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.system(size: 24, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(colorScheme == .dark ? .black : .white)
             Text(label)
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(colorScheme == .dark ? .black.opacity(0.7) : .white.opacity(0.8))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -281,6 +283,7 @@ struct RoadmapDetailView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     private let maxMilestones = 20
 
@@ -445,11 +448,19 @@ struct RoadmapDetailView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
 
-                            Button("AI Add", systemImage: isAnalyzing ? "progress.indicator" : "sparkles") {
-                                showAIPromptSheet = true
+                            Button(action: { showAIPromptSheet = true }) {
+                                Label("AI Add", systemImage: isAnalyzing ? "progress.indicator" : "sparkles")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(themeColor)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(themeColor.opacity(0.12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                            .stroke(themeColor, lineWidth: 1.5)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                             }
-                            .buttonStyle(.borderedProminent)
-                            .tint(themeColor)
                             .disabled(isAnalyzing || hasReachedMilestoneLimit || isGoalTitleEmpty)
                         }
 
@@ -468,7 +479,7 @@ struct RoadmapDetailView: View {
                             Button(action: addMilestone) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(colorScheme == .dark ? .black : .white)
                                     .frame(width: 48, height: 48)
                                     .background(hasReachedMilestoneLimit ? Color.gray : themeColor)
                                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -578,7 +589,7 @@ struct RoadmapDetailView: View {
                 }) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(colorScheme == .dark ? .black : .white)
                         .frame(width: 44, height: 44)
                         .background(Color.appAccent)
                         .clipShape(Circle())
