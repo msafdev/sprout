@@ -635,7 +635,7 @@ struct RoadmapDetailView: View {
                 TextEditor(text: $aiExtraPrompt)
                     .frame(height: 150)
                     .padding(8)
-                    .background(Color.white)
+                    .background(Color.appCard)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay {
                         RoundedRectangle(cornerRadius: 12)
