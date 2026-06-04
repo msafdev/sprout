@@ -167,3 +167,29 @@ struct DateNavigationRow: View {
         .font(.subheadline).foregroundColor(.secondary)
     }
 }
+
+#Preview {
+    // 1. Create a temporary in-memory container
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Milestone.self, Roadmap.self, configurations: config)
+    
+    // 2. Create some sample data
+    let roadmap = Roadmap(title: "Photography Basics")
+    let milestone = Milestone(
+        title: "Golden Hour Practice",
+        content: "Trying to catch the soft light.",
+        emotionLevel: 5,
+        completedAt: Date()
+    )
+    milestone.roadmap = roadmap
+    
+    // 3. Add to context
+    container.mainContext.insert(roadmap)
+    container.mainContext.insert(milestone)
+    
+    // 4. Return the view
+    return NavigationStack {
+        RecollectDetailView(date: Date(), allMilestones: [milestone])
+            .modelContainer(container)
+    }
+}

@@ -17,7 +17,6 @@ struct CameraScreen: View {
     @State private var imageToPass: CameraScreenImage? = nil
     
     @State private var flashPulse = false
-    @State private var showGrid = false
     @State private var timerActive = false
     @State private var timerCount = 0
     
@@ -70,11 +69,6 @@ struct CameraScreen: View {
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
                             .stroke(Color(.opaqueSeparator).opacity(0.35), lineWidth: 1)
                     )
-                    .overlay(
-                        Group {
-                            if showGrid { GridOverlay() }
-                        }
-                    )
                     .padding(.horizontal, 20)
                     .padding(.top, 72)
                     
@@ -121,13 +115,19 @@ struct CameraScreen: View {
                 Spacer()
                 
                 if camera.capturedImage == nil {
-                    VStack(spacing: 32) {
+                    VStack(spacing: 21) {
+                        // 1. Conditional visibility: The text only exists in the UI tree when active
+                        if timerActive {
+                            Text("3-second timer is active")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .transition(.opacity.combined(with: .move(edge: .top))) // Smooth entrance
+                        }
                         HStack(spacing: 16) {
-                            cameraOptionButton(icon: "rectangle.grid.3x3", active: showGrid) {
-                                showGrid.toggle()
-                            }
                             cameraOptionButton(icon: "clock", active: timerActive) {
-                                timerActive.toggle()
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    timerActive.toggle()
+                                }
                             }
                         }
                         
@@ -190,18 +190,6 @@ struct CameraScreen: View {
                     .padding(.bottom, 48)
                 } else {
                     VStack(spacing: 48) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(red: 150/255, green: 180/255, blue: 80/255))
-                            
-                            Text("Photo captured")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 24)
                         
                         HStack(spacing: 12) {
                             Button(action: {
