@@ -342,9 +342,6 @@ struct CalendarDayCell: View {
 // MARK: - Profile & Settings View
 struct ProfileSheetView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
-
-    @AppStorage("isDarkMode") private var isDarkMode = false
     @AppStorage("notificationsEnabled") private var notificationsEnabled = false
     @AppStorage("reduceMotion") private var reduceMotion = false
 
@@ -355,13 +352,6 @@ struct ProfileSheetView: View {
             List {
                 // MARK: Preferences
                 Section(header: Text("Preferences")) {
-                    Toggle(isOn: $isDarkMode) {
-                        Label("Dark Mode", systemImage: "moon.fill")
-                    }
-                    .onChange(of: isDarkMode) { _, enabled in
-                        setAppColorScheme(dark: enabled)
-                    }
-
                     Toggle(isOn: $reduceMotion) {
                         Label("Reduce Motion", systemImage: "hand.raised.fill")
                     }
@@ -404,7 +394,6 @@ struct ProfileSheetView: View {
                 Text("Please enable notifications for Sprout in Settings to receive daily reminders.")
             }
         }
-        .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 
     // MARK: - Notification Helpers
@@ -441,12 +430,6 @@ struct ProfileSheetView: View {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["sprout.daily.reminder"])
     }
 
-    // MARK: - Dark Mode Helper
-
-    private func setAppColorScheme(dark: Bool) {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
-        scene.windows.forEach { $0.overrideUserInterfaceStyle = dark ? .dark : .light }
-    }
 }
 
 struct AccessibilityIdeaRow: View {

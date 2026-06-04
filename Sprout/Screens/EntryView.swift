@@ -67,9 +67,9 @@ struct EntryView: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.black)
+                            .foregroundColor(.primary)
                             .frame(width: 44, height: 44)
-                            .background(Color.black.opacity(0.06))
+                            .background(Color.primary.opacity(0.06))
                             .clipShape(Circle())
                     }
                     
@@ -106,7 +106,7 @@ struct EntryView: View {
                                     withAnimation { isRoadmapDropdownFocused = isEditing }
                                 })
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.black)
+                                .foregroundColor(.primary)
                                 
                                 if selectedRoadmap != nil {
                                     Button(action: {
@@ -138,7 +138,7 @@ struct EntryView: View {
                                                     .fill(Color.fromHex(roadmap.colorHex))
                                                     .frame(width: 12, height: 12)
                                                 Text(roadmap.title)
-                                                    .foregroundColor(.black)
+                                                    .foregroundColor(.primary)
                                                 Spacer()
                                             }
                                             .padding(.horizontal, 16)
@@ -148,18 +148,15 @@ struct EntryView: View {
                                     }
                                     Divider()
                                 }
-                                .background(Color(.systemBackground))
+                                .background(Color.appCard)
                                 .cornerRadius(16)
-                                .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
+                                .shadow(color: Color.primary.opacity(0.08), radius: 12, x: 0, y: 6)
                             }
-                            .background(Color(.systemBackground))
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
                         }
                         .padding(20)
-                        .background(Color.white)
+                        .background(Color.appCard)
                         .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
+                        .shadow(color: Color.primary.opacity(0.04), radius: 14, x: 0, y: 6)
                         
                         // --- 3. DYNAMIC ROADMAP GOAL DESCRIPTION FIELD ---
                         if selectedRoadmap == nil {
@@ -172,7 +169,7 @@ struct EntryView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Roadmap Goal Description")
                                             .font(.system(size: 16, weight: .bold))
-                                            .foregroundColor(.black)
+                                            .foregroundColor(.primary)
                                         Text("Describe the learning outcome for this roadmap.")
                                             .font(.system(size: 13))
                                             .foregroundColor(.secondary)
@@ -186,9 +183,9 @@ struct EntryView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 16))
                             }
                             .padding(20)
-                            .background(Color.white)
+                            .background(Color.appCard)
                             .clipShape(RoundedRectangle(cornerRadius: 24))
-                            .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
+                            .shadow(color: Color.primary.opacity(0.04), radius: 14, x: 0, y: 6)
                             .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                         
@@ -201,7 +198,7 @@ struct EntryView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Milestone / Lesson Title")
                                         .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.black)
+                                        .foregroundColor(.primary)
                                     Text(collectionText.isEmpty ? "Enter a roadmap title first to enable milestone selection." : "Choose an existing incomplete milestone or start a new one.")
                                         .font(.system(size: 13))
                                         .foregroundColor(.secondary)
@@ -249,7 +246,7 @@ struct EntryView: View {
                                                 Image(systemName: "circle")
                                                     .foregroundColor(.gray)
                                                 Text(milestone.title)
-                                                    .foregroundColor(.black)
+                                                    .foregroundColor(.primary)
                                                 Spacer()
                                             }
                                             .padding(.horizontal, 16)
@@ -260,13 +257,13 @@ struct EntryView: View {
                                 }
                                 .background(Color(.systemBackground))
                                 .cornerRadius(16)
-                                .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
+                                .shadow(color: Color.primary.opacity(0.08), radius: 12, x: 0, y: 6)
                             }
                         }
                         .padding(20)
-                        .background(Color.white)
+                        .background(Color.appCard)
                         .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
+                        .shadow(color: Color.primary.opacity(0.04), radius: 14, x: 0, y: 6)
                         
                         // --- 5. EXPLANATION DATA RECORD FIELD ---
                         VStack(alignment: .leading, spacing: 14) {
@@ -277,7 +274,7 @@ struct EntryView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Explanation")
                                         .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.black)
+                                        .foregroundColor(.appPrimary)
                                     Text("Write a quick note for how this lesson felt and what you learned.")
                                         .font(.system(size: 13))
                                         .foregroundColor(.secondary)
@@ -291,9 +288,9 @@ struct EntryView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                         .padding(20)
-                        .background(Color.white)
+                        .background(Color.appCard)
                         .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
+                        .shadow(color: Color.primary.opacity(0.04), radius: 14, x: 0, y: 6)
                         
                         // --- 6. FEELING SCORE MOOD PICKER ---
                         VStack(alignment: .leading, spacing: 16) {
@@ -304,7 +301,7 @@ struct EntryView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("How did it feel after finishing this lesson?")
                                         .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.black)
+                                        .foregroundColor(.primary)
                                     Text("Tap one leaf to capture your mood.")
                                         .font(.system(size: 13))
                                         .foregroundColor(.secondary)
@@ -336,9 +333,9 @@ struct EntryView: View {
                                 .padding(.vertical, 10)
                         }
                         .padding(20)
-                        .background(Color.white)
+                        .background(Color.appCard)
                         .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
+                        .shadow(color: Color.primary.opacity(0.04), radius: 14, x: 0, y: 6)
                         
                         // --- 7. SUBMIT PERSISTENCE ACTION TRIGGER ---
                         VStack(spacing: 12) {

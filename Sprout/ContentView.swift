@@ -10,17 +10,13 @@ import SwiftData
 
 struct ContentView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
-    @AppStorage("isDarkMode") private var isDarkMode = false
 
     var body: some View {
-        Group {
-            if hasSeenOnboarding {
-                MainTabView()
-            } else {
-                OnboardingScreen()
-            }
+        if hasSeenOnboarding {
+            MainTabView()
+        } else {
+            OnboardingScreen()
         }
-        .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 }
 

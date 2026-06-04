@@ -14,6 +14,13 @@ extension Color {
             ? UIColor(red: 190/255, green: 199/255, blue: 64/255, alpha: 1)
             : UIColor(red: 159/255, green: 158/255, blue: 50/255, alpha: 1)
     })
+    
+    // Darker olive accent
+    static let mascotAccent = Color(UIColor { t in
+        t.userInterfaceStyle == .dark
+            ? UIColor(red: 185/255, green: 194/255, blue: 59/255, alpha: 1)
+            : UIColor(red: 154/255, green: 153/255, blue: 45/255, alpha: 1)
+    })
 
     static let appBackground = Color(UIColor { t in
         t.userInterfaceStyle == .dark
@@ -40,6 +47,8 @@ extension Color {
             ? UIColor(red: 154/255, green: 156/255, blue: 130/255, alpha: 1)
             : UIColor(red: 106/255, green: 106/255, blue: 90/255, alpha: 1)
     })
+    
+    
 }
 
 struct AppGradientBackground: View {

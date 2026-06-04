@@ -153,7 +153,7 @@ struct EntryDetailView: View {
                             }
                         }
                         .padding(20)
-                        .background(Color.white)
+                        .background(Color.appCard)
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
 
@@ -175,7 +175,7 @@ struct EntryDetailView: View {
                         .padding(.top, 10)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 28)
+                    .padding(.bottom, 128)
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {

@@ -59,19 +59,19 @@ struct RoadmapScreen: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
 
-                    HStack(spacing: 16) {
-                        MascotStatView()
-                            .frame(width: 82, height: 82)
-
+                    HStack() {
+                        Spacer()
                         HStack(spacing: 0) {
                             StatItemView(label: "Collection", value: "\(roadmaps.count)")
                             StatItemView(label: "Entries", value: "\(totalEntries)")
                             StatItemView(label: "Sprouted", value: "\(completedEntries)")
                         }
+                        Spacer()
                     }
-                    .padding(16)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 32)
                     .background(Color.appAccent)
-                    .cornerRadius(24)
+                    .cornerRadius(20)
                     .padding(.horizontal, 20)
 
                     if roadmaps.isEmpty {
@@ -158,17 +158,17 @@ struct MascotStatView: View {
 
             ZStack(alignment: .topTrailing) {
                 Ellipse()
-                    .fill(Color.appAccent)
+                    .fill(Color.mascotAccent)
                     .frame(width: 58, height: 62)
                     .overlay(
                         VStack(spacing: 2) {
                             HStack(spacing: 6) {
-                                Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
-                                Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
+                                Circle().fill(Color.white.opacity(0.9)).frame(width: 3, height: 3)
+                                Circle().fill(Color.white.opacity(0.9)).frame(width: 3, height: 3)
                             }
 
                             Capsule()
-                                .stroke(Color.black.opacity(0.8), lineWidth: 1.5)
+                                .stroke(Color.white.opacity(0.9), lineWidth: 1.5)
                                 .frame(width: 6, height: 2)
                         }
                         .offset(y: 4)
@@ -176,7 +176,7 @@ struct MascotStatView: View {
 
                 Image(systemName: "leaf.fill")
                     .font(.system(size: 16))
-                    .foregroundColor(Color.appAccent)
+                    .foregroundColor(Color.mascotAccent)
                     .rotationEffect(.degrees(-35))
                     .offset(x: 5, y: -20)
             }
@@ -212,7 +212,7 @@ struct RoadmapCardView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.appBackground
+            Color.appCard
 
             if let img = sproutImage {
                 Image(img)
@@ -428,7 +428,7 @@ struct RoadmapDetailView: View {
                         }
                     }
                     .padding(24)
-                    .background(Color.appBackground)
+                    .background(Color.appCard)
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .shadow(color: Color.primary.opacity(0.04), radius: 10, x: 0, y: 6)
 
@@ -461,7 +461,7 @@ struct RoadmapDetailView: View {
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
-                            .background(Color.white)
+                            .background(Color.appCard)
                             .cornerRadius(14)
                             .disabled(hasReachedMilestoneLimit || isGoalTitleEmpty)
 
@@ -860,10 +860,11 @@ struct EntryRowView: View {
             .buttonStyle(PlainButtonStyle())
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.top, 14)
+        .padding(.bottom, 24)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.appBackground)
+                .fill(Color.appCard)
         )
     }
 

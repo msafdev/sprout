@@ -34,10 +34,6 @@ struct CameraScreen: View {
                         } else {
                             CameraPreviewContainer(session: camera.session)
                         }
-                        
-                        if showGrid {
-                            GridOverlay()
-                        }
                     }
                     .aspectRatio(3/4, contentMode: .fit)
                     .frame(maxWidth: min(UIScreen.main.bounds.width - 40, 440 * 3/4))
@@ -49,18 +45,18 @@ struct CameraScreen: View {
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
-                            
+
                             VStack(spacing: 12) {
                                 Image(systemName: "camera.aperture")
                                     .font(.system(size: 48, weight: .thin))
                                     .foregroundColor(Color.appAccent.opacity(0.8))
                                     .scaleEffect(1.0)
                                     .padding(.bottom, 4)
-                                
+
                                 Text("Camera view finder")
                                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                                     .foregroundColor(.white.opacity(0.6))
-                                
+
                                 Text("Point at your sprout or lesson activity")
                                     .font(.system(size: 12))
                                     .foregroundColor(.white.opacity(0.4))
@@ -73,6 +69,11 @@ struct CameraScreen: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
                             .stroke(Color(.opaqueSeparator).opacity(0.35), lineWidth: 1)
+                    )
+                    .overlay(
+                        Group {
+                            if showGrid { GridOverlay() }
+                        }
                     )
                     .padding(.horizontal, 20)
                     .padding(.top, 72)

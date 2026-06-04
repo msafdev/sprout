@@ -16,6 +16,7 @@ struct MascotSymbol: View {
                             Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
                         }
                         Capsule()
+                            .fill(Color.red.opacity(0.8))
                             .stroke(Color.black.opacity(0.8), lineWidth: 1.5)
                             .frame(width: 6, height: 2)
                     }
