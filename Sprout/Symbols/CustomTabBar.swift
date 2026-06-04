@@ -6,23 +6,52 @@
 //
 
 import SwiftUI
+import SwiftData // 👇 Added for SwiftData model insertions
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
+    @Binding var navigationPath: NavigationPath // 👇 Hooked to the MainTabView stack
+    
+    @Environment(\.modelContext) private var modelContext // 👇 Grabs database context
+    
     var onTabTapped: (Int) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 80) {
             ForEach(0..<3, id: \.self) { index in
-                TabBarItem(
-                    index: index,
-                    selectedTab: $selectedTab,
-                    systemName: tabSystemImage(for: index),
-                    onTap: {
-                        selectedTab = index
-                        onTabTapped(index)
+                if index == 1 {
+                    // MARK: - Instant Action Creation Button
+                    Button(action: {
+                        let roadmap = Roadmap(title: "", goalDescription: "", colorHex: "#9F9E32")
+                        modelContext.insert(roadmap)
+                        try? modelContext.save()
+                        
+                        // 1. Force screen switch to the Roadmap tab container
+                        selectedTab = 2
+                        
+                        // 2. Instantly push the detail view over the stack root
+                        navigationPath.append(roadmap)
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(Color(UIColor.systemBackground))
+                            .frame(width: 44, height: 44)
+                            .background(Color.appAccent)
+                            .clipShape(Circle())
                     }
-                )
+                    .buttonStyle(EmptyTabButtonStyle())
+                } else {
+                    // MARK: - Persistent Tab Items (0 and 2)
+                    TabBarItem(
+                        index: index,
+                        selectedTab: $selectedTab,
+                        systemName: tabSystemImage(for: index),
+                        onTap: {
+                            selectedTab = index
+                            onTabTapped(index)
+                        }
+                    )
+                }
             }
         }
         .padding(.top, 48)
@@ -44,7 +73,6 @@ struct CustomTabBar: View {
     private func tabSystemImage(for index: Int) -> String {
         switch index {
         case 0: return "calendar"
-        case 1: return "camera.aperture"
         case 2: return "point.topleft.filled.down.to.point.bottomright.curvepath"
         default: return ""
         }

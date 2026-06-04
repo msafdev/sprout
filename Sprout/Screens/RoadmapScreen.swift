@@ -362,7 +362,7 @@ struct RoadmapDetailView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            TextField("New goal", text: $roadmap.title, axis: .vertical)
+                            TextField("New Roadmap", text: $roadmap.title, axis: .vertical)
                                 .lineLimit(1...)
                                 .font(.title2)
                                 .bold()
