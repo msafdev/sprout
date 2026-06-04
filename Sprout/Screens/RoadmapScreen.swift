@@ -39,6 +39,7 @@ struct RoadmapScreen: View {
                                 .font(.subheadline)
                                 .foregroundColor(.primary.opacity(0.8))
                         }
+
                         Spacer()
 
                         Button(action: {
@@ -86,6 +87,7 @@ struct RoadmapScreen: View {
                     } else {
                         ScrollView {
                             let columns = [GridItem(.flexible()), GridItem(.flexible())]
+
                             LazyVGrid(columns: columns, spacing: 20) {
                                 ForEach(roadmaps) { roadmap in
                                     NavigationLink(value: roadmap) {
@@ -123,6 +125,7 @@ struct RoadmapScreen: View {
             Milestone(title: "Practice three photo compositions with available light"),
             Milestone(title: "Review selected shots and identify improvement areas")
         ]
+
         modelContext.insert(roadmap)
         try? modelContext.save()
     }
@@ -163,7 +166,10 @@ struct MascotStatView: View {
                                 Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
                                 Circle().fill(Color.black.opacity(0.8)).frame(width: 3, height: 3)
                             }
-                            Capsule().stroke(Color.black.opacity(0.8), lineWidth: 1.5).frame(width: 6, height: 2)
+
+                            Capsule()
+                                .stroke(Color.black.opacity(0.8), lineWidth: 1.5)
+                                .frame(width: 6, height: 2)
                         }
                         .offset(y: 4)
                     )
@@ -195,10 +201,12 @@ struct RoadmapCardView: View {
     
     var sproutImage: String? {
         guard totalCount > 0 else { return nil }
+
         if progress == 0 { return "animation 1" }
         if progress <= 0.25 { return "animation 2" }
         if progress <= 0.50 { return "animation 3" }
         if progress <= 0.75 { return "animation 4" }
+
         return "animation 5"
     }
 
@@ -227,8 +235,13 @@ struct RoadmapCardView: View {
                 HStack(spacing: 8) {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(.systemGray5)).frame(height: 8)
-                            Capsule().fill(themeColor).frame(width: max(0, geo.size.width * CGFloat(progress)), height: 8)
+                            Capsule()
+                                .fill(Color(.systemGray5))
+                                .frame(height: 8)
+
+                            Capsule()
+                                .fill(themeColor)
+                                .frame(width: max(0, geo.size.width * CGFloat(progress)), height: 8)
                         }
                     }
                     .frame(height: 8)
@@ -258,74 +271,100 @@ struct RoadmapCardView: View {
 
 // MARK: - Detailed Inside Workspace View
 struct RoadmapDetailView: View {
+    var isGoalTitleEmpty: Bool {
+        roadmap.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    @State private var showDeleteRoadmapAlert = false
+    @State private var isCreatingContinuation = false
     @Bindable var roadmap: Roadmap
+    @Binding var navigationPath: NavigationPath
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    private let maxMilestones = 20
+
     @State private var newMilestoneTitle = ""
-    @State private var showPhotoSuggestionAlert = false
-    @State private var milestonePendingCompletion: Milestone? = nil
+    @State private var showImageRequiredAlert = false
     @State private var selectedMilestone: Milestone? = nil
     @State private var showTitleRequired = false
+
     @State private var partial: NodesData.PartiallyGenerated?
     @State private var isAnalyzing = false
     @State private var note: String = ""
 
-    @State private var session = LanguageModelSession(instructions: Instructions{ "You are a helpful notes assistant"
-       "When using Acronyms provide definitions for clarity"
-        "Never use slang language"
-    }
+    @State private var showAIPromptSheet = false
+    @State private var aiExtraPrompt = ""
+
+    @State private var session = LanguageModelSession(
+        instructions: Instructions {
+            "You are a helpful notes assistant"
+            "When using Acronyms provide definitions for clarity"
+            "Never use slang language"
+        }
     )
+
+    var remainingMilestoneSlots: Int {
+        max(0, maxMilestones - roadmap.milestones.count)
+    }
+
+    var hasReachedMilestoneLimit: Bool {
+        roadmap.milestones.count >= maxMilestones
+    }
 
     var themeColor: Color { Color.fromHex(roadmap.colorHex) }
     var completedCount: Int { roadmap.milestones.filter { $0.isCompleted }.count }
     var totalCount: Int { roadmap.milestones.count }
-    
+
     var progress: Double {
         guard totalCount > 0 else { return 0.0 }
         return Double(completedCount) / Double(totalCount)
     }
-    
+
     var sproutImage: String? {
         guard totalCount > 0 else { return nil }
+
         if progress == 0 { return "animation 1" }
         if progress <= 0.25 { return "animation 2" }
         if progress <= 0.50 { return "animation 3" }
         if progress <= 0.75 { return "animation 4" }
+
         return "animation 5"
     }
-    
+
     var stageName: String {
         if totalCount == 0 { return "Nothing Planted Yet" }
         if progress == 0 { return "Freshly Planted" }
         if progress <= 0.25 { return "Sprouting Up" }
         if progress <= 0.50 { return "Growing Strong" }
         if progress <= 0.75 { return "Almost There" }
+
         return "Fully Sprouted!"
     }
-    
+
     var stageSubtitle: String {
         if totalCount == 0 { return "Add a milestone to begin your journey" }
         if progress == 0 { return "Every journey starts with a single seed." }
         if completedCount == totalCount { return "You've completed all milestones!" }
+
         return "\(totalCount - completedCount) more to grow"
     }
 
     var body: some View {
         ZStack(alignment: .top) {
-            // 1. Set the global background color for the entire view
             Color.appBackground.ignoresSafeArea()
 
-            // 2. Main Scrollable Content
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-
-                    // Header Goal Info Workspace Card
                     VStack(alignment: .leading, spacing: 14) {
-                        TextField("New goal", text: $roadmap.title, axis: .vertical)
-                            .lineLimit(1...)
-                            .font(.title2).bold()
-                            .foregroundColor(.primary)
+                        HStack {
+                            TextField("New goal", text: $roadmap.title, axis: .vertical)
+                                .lineLimit(1...)
+                                .font(.title2)
+                                .bold()
+                                .foregroundColor(.primary)
+
+                        }
 
                         if showTitleRequired && roadmap.title.trimmingCharacters(in: .whitespaces).isEmpty {
                             Text("Please enter a title before saving.")
@@ -344,7 +383,10 @@ struct RoadmapDetailView: View {
                         VStack(spacing: 10) {
                             HStack(spacing: 12) {
                                 if let img = sproutImage {
-                                    Image(img).resizable().scaledToFit().frame(height: 52)
+                                    Image(img)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(height: 52)
                                 } else {
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(Color.primary.opacity(0.06))
@@ -353,15 +395,20 @@ struct RoadmapDetailView: View {
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(stageName)
-                                        .font(.subheadline).fontWeight(.bold)
+                                        .font(.subheadline)
+                                        .fontWeight(.bold)
                                         .foregroundColor(themeColor)
+
                                     Text(stageSubtitle)
                                         .font(.caption)
                                         .foregroundColor(.primary.opacity(0.6))
                                 }
+
                                 Spacer()
+
                                 Text("\(Int(progress * 100))%")
-                                    .font(.title3).fontWeight(.bold)
+                                    .font(.title3)
+                                    .fontWeight(.bold)
                                     .foregroundColor(themeColor)
                             }
 
@@ -370,6 +417,7 @@ struct RoadmapDetailView: View {
                                     RoundedRectangle(cornerRadius: 6)
                                         .fill(Color.primary.opacity(0.10))
                                         .frame(height: 10)
+
                                     RoundedRectangle(cornerRadius: 6)
                                         .fill(themeColor)
                                         .frame(width: max(0, geo.size.width * CGFloat(progress)), height: 10)
@@ -383,36 +431,80 @@ struct RoadmapDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .shadow(color: Color.primary.opacity(0.04), radius: 10, x: 0, y: 6)
 
-                    // Milestones Section
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Milestones")
-                            .font(.title3).fontWeight(.bold)
-                            .foregroundColor(.primary)
-                        
-                        Button(isAnalyzing ? "Analyzing..." : "Analyze note"){
-                            Task { await addMilestoneAI() }
+                        HStack {
+                            Text("Milestones")
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+
+                            Spacer()
+
+                            Text("\(roadmap.milestones.count)/\(maxMilestones)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Button("AI Add", systemImage: isAnalyzing ? "progress.indicator" : "sparkles") {
+                                showAIPromptSheet = true
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(themeColor)
+                            .disabled(isAnalyzing || hasReachedMilestoneLimit || isGoalTitleEmpty)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isAnalyzing)
-                        
-                        
+
                         HStack(spacing: 10) {
-                            TextField("Add a new milestone...", text: $newMilestoneTitle)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
-                                .background(Color.white)
-                                .cornerRadius(14)
+                            TextField(
+                                hasReachedMilestoneLimit ? "Milestone limit reached" : "Add a new milestone...",
+                                text: $newMilestoneTitle
+                            )
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(Color.white)
+                            .cornerRadius(14)
+                            .disabled(hasReachedMilestoneLimit || isGoalTitleEmpty)
 
                             Button(action: addMilestone) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.white)
                                     .frame(width: 48, height: 48)
-                                    .background(themeColor)
+                                    .background(hasReachedMilestoneLimit ? Color.gray : themeColor)
                                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
-                            .disabled(newMilestoneTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                            .disabled(
+                                newMilestoneTitle.trimmingCharacters(in: .whitespaces).isEmpty ||
+                                hasReachedMilestoneLimit ||
+                                isGoalTitleEmpty
+                            )
+                        }
+
+                        if hasReachedMilestoneLimit {
+                            VStack(spacing: 10) {
+                                Text("This roadmap has reached the 20 milestone limit.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+
+                                Button {
+                                    createContinuationRoadmap()
+                                } label: {
+                                    HStack {
+                                        if isCreatingContinuation {
+                                            ProgressView()
+                                        }
+
+                                        Text(isCreatingContinuation ? "Creating..." : "Create \(continuationTitle())")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(themeColor)
+                                .disabled(isCreatingContinuation)
+                            }
+                            .padding()
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 
                         if roadmap.milestones.isEmpty {
@@ -437,9 +529,7 @@ struct RoadmapDetailView: View {
                     }
 
                     Button(action: {
-                        modelContext.delete(roadmap)
-                        try? modelContext.save()
-                        dismiss()
+                        showDeleteRoadmapAlert = true
                     }) {
                         Text("Delete Roadmap")
                             .font(.subheadline)
@@ -448,14 +538,13 @@ struct RoadmapDetailView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
                     }
+
                     Spacer().frame(height: 40)
                 }
                 .padding(20)
             }
-            
-            // Automatically adds space for the header without manual guesswork
             .safeAreaInset(edge: .top, spacing: 0) {
-                Color.clear.frame(height: 70) // Adjust this to match your header's visual height
+                Color.clear.frame(height: 70)
             }
 
             // 3. Fixed Header (Kept at top of ZStack)
@@ -465,6 +554,7 @@ struct RoadmapDetailView: View {
                         modelContext.delete(roadmap)
                         try? modelContext.save()
                     }
+
                     dismiss()
                 }) {
                     Image(systemName: "chevron.left")
@@ -520,65 +610,176 @@ struct RoadmapDetailView: View {
         } message: {
             Text("Your recollection screen looks best with photos! Want to add one before finishing this lesson?")
         }
+        .alert("Delete Roadmap?", isPresented: $showDeleteRoadmapAlert) {
+            Button("Cancel", role: .cancel) { }
+
+            Button("Delete", role: .destructive) {
+                modelContext.delete(roadmap)
+                try? modelContext.save()
+                dismiss()
+            }
+        } message: {
+            Text("This action cannot be undone.")
+        }
+        .sheet(isPresented: $showAIPromptSheet) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("AI Add Milestones")
+                    .font(.title2)
+                    .bold()
+
+                Text("Add extra direction so the AI knows what kind of milestones to generate.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                TextEditor(text: $aiExtraPrompt)
+                    .frame(height: 150)
+                    .padding(8)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                    }
+
+                Text("\(remainingMilestoneSlots) milestone slots remaining")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Button {
+                    showAIPromptSheet = false
+
+                    Task {
+                        await addMilestoneAI(extraPrompt: aiExtraPrompt)
+                        aiExtraPrompt = ""
+                    }
+                } label: {
+                    Text(isAnalyzing ? "Generating..." : "Generate Milestones")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(themeColor)
+                .disabled(isAnalyzing || hasReachedMilestoneLimit)
+
+                Button("Cancel") {
+                    showAIPromptSheet = false
+                }
+                .frame(maxWidth: .infinity)
+
+                Spacer()
+            }
+            .padding()
+            .presentationDetents([.medium, .large])
+        }
     }
-    
+
     private func addMilestone() {
+        guard !isGoalTitleEmpty else {
+            withAnimation { showTitleRequired = true }
+            return
+        }
+
         let cleanTitle = newMilestoneTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
+
         withAnimation {
             let newMilestone = Milestone(title: cleanTitle)
             newMilestone.roadmap = roadmap
             roadmap.milestones.append(newMilestone)
             newMilestoneTitle = ""
+
             try? modelContext.save()
         }
     }
-    private func addMilestoneAI() async {
-        
 
-            partial = nil
-            isAnalyzing = true
-            note = roadmap.title
+    private func addMilestoneAI(extraPrompt: String = "") async {
+        guard !isGoalTitleEmpty else {
+            withAnimation { showTitleRequired = true }
+            return
+        }
+
+        partial = nil
+        isAnalyzing = true
+        defer { isAnalyzing = false }
+
+        note = roadmap.title
         note += roadmap.goalDescription.isEmpty ? "" : " and the goal description: \(roadmap.goalDescription)."
-            note += roadmap.milestones.isEmpty ? "" :"the following actionable items are currently in this roadmap (don't repeat them and analysize them so taht you can kind off guess what the next few new nodes should be): " + roadmap.milestones.map(\.title).joined(separator: ",")+"."
-            do {
-                print(note)
-                // Ask the model to analyze the current note text
-                let stream = session.streamResponse(generating: NodesData.self) {
-                    "Analyze this note: \(note)"
-                }
-                for try await snapshot in stream {
-                    partial = snapshot.content  // Update UI with the latest partial analysis
-                }
-            } catch {
-                print("Streaming Failed \(error.localizedDescription)")
-            }
-            // Clear loading state when finished
-            isAnalyzing = false
-                                                  
-        
-//        withAnimation {
-            if let items = partial?.actionItems {
-                for item in items.compactMap({ $0 }) {
-                    let newMilestone = Milestone(title: item)
-                    newMilestone.roadmap = roadmap
-                    roadmap.milestones.append(newMilestone)
-                }
+        note += roadmap.milestones.isEmpty ? "" : " the following actionable items are currently in this roadmap, don't repeat them and analyze them so you can guess what the next few new nodes should be: " + roadmap.milestones.map(\.title).joined(separator: ", ") + "."
 
-                try? modelContext.save()
-//            }
+        let cleanExtraPrompt = extraPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !cleanExtraPrompt.isEmpty {
+            note += " Extra user direction: \(cleanExtraPrompt)."
+        }
+
+        note += " Generate no more than \(remainingMilestoneSlots) new milestones."
+
+        do {
+            print(note)
+
+            let stream = session.streamResponse(generating: NodesData.self) {
+                "Make actionable items from the following prompt: \(note)"
+            }
+
+            for try await snapshot in stream {
+                partial = snapshot.content
+            }
+        } catch {
+            print("Streaming Failed \(error.localizedDescription)")
+        }
+
+        if let items = partial?.actionItems {
+            let limitedItems = items.compactMap({ $0 }).prefix(remainingMilestoneSlots)
+
+            for item in limitedItems {
+                let newMilestone = Milestone(title: item)
+                newMilestone.roadmap = roadmap
+                roadmap.milestones.append(newMilestone)
+            }
+
+            try? modelContext.save()
+        }
+    }
+
+    private func continuationTitle() -> String {
+        let baseTitle = roadmap.title.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if baseTitle.isEmpty {
+            return "New Roadmap Part 2"
+        }
+
+        return "\(baseTitle) I"
+    }
+
+    private func createContinuationRoadmap() {
+        guard !isCreatingContinuation else { return }
+
+        isCreatingContinuation = true
+
+        let newRoadmap = Roadmap(
+            title: continuationTitle(),
+            goalDescription: roadmap.goalDescription,
+            colorHex: roadmap.colorHex
+        )
+
+        modelContext.insert(newRoadmap)
+        try? modelContext.save()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            if !navigationPath.isEmpty {
+                navigationPath.removeLast()
+            }
+
+            navigationPath.append(newRoadmap)
+            isCreatingContinuation = false
         }
     }
 
     private func toggleMilestone(_ milestone: Milestone) {
         withAnimation {
             if milestone.isCompleted {
-                // Revert completion
                 milestone.isCompleted = false
                 milestone.completedAt = nil
-                try? modelContext.save()
             } else if milestone.imageData != nil {
-                // Has a photo, complete immediately
                 milestone.isCompleted = true
                 milestone.completedAt = Date()
                 try? modelContext.save()
@@ -587,6 +788,8 @@ struct RoadmapDetailView: View {
                 milestonePendingCompletion = milestone
                 showPhotoSuggestionAlert = true
             }
+
+            try? modelContext.save()
         }
     }
 
@@ -594,6 +797,7 @@ struct RoadmapDetailView: View {
         withAnimation {
             roadmap.milestones.removeAll { $0.id == milestone.id }
             modelContext.delete(milestone)
+
             try? modelContext.save()
         }
     }
@@ -602,6 +806,7 @@ struct RoadmapDetailView: View {
 // MARK: - Individual Row Component (Avoids Gesture Hierarchy Interferences)
 struct EntryRowView: View {
     @Bindable var milestone: Milestone
+
     let themeColor: Color
     let onToggle: () -> Void
     let onDelete: () -> Void
@@ -609,7 +814,6 @@ struct EntryRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Checkbox Control Handle
             Image(systemName: milestone.isCompleted ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 24))
                 .foregroundColor(milestone.isCompleted ? themeColor : .primary.opacity(0.35))
@@ -620,7 +824,8 @@ struct EntryRowView: View {
             // Central Tap Segment (Navigates cleanly to Detail Cards)
             VStack(alignment: .leading, spacing: 3) {
                 Text(milestone.title)
-                    .font(.subheadline).fontWeight(.semibold)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
                     .strikethrough(milestone.isCompleted)
                     .foregroundColor(milestone.isCompleted ? .primary.opacity(0.55) : .primary)
                     .multilineTextAlignment(.leading)
@@ -639,13 +844,12 @@ struct EntryRowView: View {
             }
 
             if milestone.emotionLevel > 0 {
-                Image(emotionEmoji(for: milestone.emotionLevel)) // Uses the function to get the asset name
+                Image(emotionEmoji(for: milestone.emotionLevel))
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 22, height: 22) // Matches your previous size
+                    .frame(width: 22, height: 22)
             }
 
-            // Destructive Delete Controls Action Item
             Button(action: onDelete) {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .bold))
@@ -673,7 +877,7 @@ struct EntryRowView: View {
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Roadmap.self, Milestone.self, configurations: config)
-    
+
     return RoadmapScreen(navigationPath: .constant(NavigationPath()))
         .modelContainer(container)
 }
