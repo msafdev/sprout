@@ -230,15 +230,15 @@ struct EntryDetailView: View {
                 try? modelContext.save()
             }
         }
-    private func emotionImage(for level: Int) -> some View {
+    private func emotionImage(for level: Int, isSelected: Bool = false) -> some View {
         let moodAssets = ["s_angry", "s_confused", "s_sad", "s_flat", "s_happy"]
-        
-        // Ensure the level is within bounds (1-5)
         let index = max(0, min(level - 1, moodAssets.count - 1))
-        
         return Image(moodAssets[index])
             .resizable()
             .scaledToFit()
-            .frame(width: 40, height: 40) // Adjust size as needed for your detail view
+            .frame(width: 40, height: 40)
+            .scaleEffect(isSelected ? 1.2 : 1.0)
+            .opacity(isSelected ? 1.0 : 0.45)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
     }
 }

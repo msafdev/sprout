@@ -212,7 +212,7 @@ struct RoadmapCardView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.white
+            Color.appBackground
 
             if let img = sproutImage {
                 Image(img)
@@ -428,7 +428,7 @@ struct RoadmapDetailView: View {
                         }
                     }
                     .padding(24)
-                    .background(Color.white)
+                    .background(Color.appBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .shadow(color: Color.primary.opacity(0.04), radius: 10, x: 0, y: 6)
 
@@ -863,7 +863,7 @@ struct EntryRowView: View {
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white)
+                .fill(Color.appBackground)
         )
     }
 
