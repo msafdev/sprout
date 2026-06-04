@@ -122,6 +122,11 @@ struct MonthCalendarView: View {
     private let calendar = Calendar.current
     private let weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
     
+    // 👇 States to manage the jump-to selector sheet
+    @State private var showDatePickerSheet = false
+    @State private var selectedMonth = 1
+    @State private var selectedYear = 2026
+    
     var monthHeader: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
@@ -149,6 +154,12 @@ struct MonthCalendarView: View {
         return firstWeekday - 1
     }
     
+    // Add this computed property inside your MonthCalendarView to create a stable ID
+    private var calendarMonthID: String {
+        let components = calendar.dateComponents([.year, .month], from: monthDate)
+        return "\(components.year ?? 2026)-\(components.month ?? 1)"
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             // Month Switcher Header
@@ -168,14 +179,28 @@ struct MonthCalendarView: View {
                 
                 Spacer()
                 
-                VStack(spacing: 2) {
-                    Text(monthHeader)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.primary)
-                    Text("\(totalEntriesInMonth) entries")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray.opacity(0.8))
+                // 👇 Turned the header text into a button to trigger the picker
+                Button(action: {
+                    let components = calendar.dateComponents([.year, .month], from: monthDate)
+                    selectedMonth = components.month ?? 1
+                    selectedYear = components.year ?? 2026
+                    showDatePickerSheet = true
+                }) {
+                    VStack(spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(monthHeader)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.primary)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.gray)
+                        }
+                        Text("\(totalEntriesInMonth) entries")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray.opacity(0.8))
+                    }
                 }
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
@@ -204,35 +229,99 @@ struct MonthCalendarView: View {
             }
             
             // Grid
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(0..<firstWeekdayOffset, id: \.self) { _ in
-                    Spacer()
-                        .frame(height: 44)
-                }
-                
-                ForEach(1...daysInMonth, id: \.self) { day in
-                    let date = dateForDay(day)
-                    let dateMilestones = milestonesForDate(date)
+                    let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
                     
-                    CalendarDayCell(
-                        day: day,
-                        isToday: calendar.isDateInToday(date),
-                        milestones: dateMilestones
-                    ) {
-                        onSelectDay(dateMilestones)
+                    LazyVGrid(columns: columns, spacing: 10) {
+                        ForEach(0..<firstWeekdayOffset, id: \.self) { _ in
+                            // Fixed: Changed Spacer() to Color.clear for grid cell stability
+                            Color.clear
+                                .frame(height: 44)
+                        }
+                        
+                        ForEach(1...daysInMonth, id: \.self) { day in
+                            let date = dateForDay(day)
+                            let dateMilestones = milestonesForDate(date)
+                            
+                            CalendarDayCell(
+                                day: day,
+                                isToday: calendar.isDateInToday(date),
+                                milestones: dateMilestones
+                            ) {
+                                onSelectDay(dateMilestones)
+                            }
+                        }
                     }
+                    // 👇 CRITICAL FIX: Forces SwiftUI to reset layout cache when the month changes
+                    .id(calendarMonthID)
                 }
+                .onAppear {
+                    print("Calendar appearing for: \(monthHeader)")
+                }
+        // 👇 Bottom sheet configuration for picking month & year explicitly
+        .sheet(isPresented: $showDatePickerSheet) {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Jump to Date")
+                        .font(.headline)
+                    Spacer()
+                    Button("Done") {
+                        var components = calendar.dateComponents([.hour, .minute, .second], from: monthDate)
+                        components.year = selectedYear
+                        components.month = selectedMonth
+                        components.day = 1 // Normalize to first of the month
+                        
+                        if let targetDate = calendar.date(from: components) {
+                            monthDate = targetDate
+                        }
+                        showDatePickerSheet = false
+                    }
+                    .font(.body)
+                    .fontWeight(.semibold)
+                }
+                .padding()
+                
+                Divider()
+                
+                HStack(spacing: 0) {
+                    // Month Picker Wheel
+                    Picker("Month", selection: $selectedMonth) {
+                        ForEach(1...12, id: \.self) { m in
+                            Text(calendar.monthSymbols[m - 1]).tag(m)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    
+                    // Year Picker Wheel
+                    Picker("Year", selection: $selectedYear) {
+                        ForEach(2020...2035, id: \.self) { y in
+                            Text(String(y)).tag(y)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                }
+                .padding(.horizontal)
             }
-        }
-        // Add this to your MonthCalendarView inside the body
-        .onAppear {
-            print("Calendar appearing for: \(monthHeader)")
+            .presentationDetents([.height(260)]) // Restricts container to just fit the wheels cleanly
         }
     }
     
+    // Helper to keep structural compilation clean inside LazyVGrid
+    @ViewBuilder
+    private func ForGrid(_ range: ClosedRange<Int>) -> some View {
+        ForEach(range, id: \.self) { day in
+            let date = dateForDay(day)
+            let dateMilestones = milestonesForDate(date)
+            
+            CalendarDayCell(
+                day: day,
+                isToday: calendar.isDateInToday(date),
+                milestones: dateMilestones
+            ) {
+                onSelectDay(dateMilestones)
+            }
+        }
+    }
     
-    // Fixed: Pulls structural components explicitly matching current calendar calculation contexts
     private func dateForDay(_ day: Int) -> Date {
         var components = calendar.dateComponents([.year, .month], from: monthDate)
         components.day = day
@@ -246,7 +335,6 @@ struct MonthCalendarView: View {
         }
     }
 }
-
 // MARK: - Gaby's Visual Calendar Cell Style
 struct CalendarDayCell: View {
     let day: Int

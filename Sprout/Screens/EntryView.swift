@@ -79,7 +79,7 @@ struct EntryView: View {
 
                     // Collection
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Collection")
+                        Text("Roadmap")
                             .font(.caption).fontWeight(.bold).foregroundColor(.gray)
                         HStack {
                             TextField("e.g., Machining Fundamentals", text: $collectionText, onEditingChanged: { isEditing in
@@ -137,7 +137,7 @@ struct EntryView: View {
                     if selectedRoadmap == nil {
                         Divider()
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Goal Description")
+                            Text("Roadmap's Description")
                                 .font(.caption).fontWeight(.bold).foregroundColor(.gray)
                             TextField("Describe the learning outcome for this roadmap.", text: $goalDescriptionText, axis: .vertical)
                                 .lineLimit(2...4)
@@ -282,7 +282,7 @@ struct EntryView: View {
 
                 Spacer()
 
-                Text(selectedRoadmap == nil ? "Create Journey" : "Log Progress")
+                Text(selectedRoadmap == nil ? "Create Roadmap" : "Log Progress")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.primary)
 

@@ -63,7 +63,7 @@ struct RoadmapScreen: View {
                     HStack() {
                         Spacer()
                         HStack(spacing: 0) {
-                            StatItemView(label: "Collection", value: "\(roadmaps.count)")
+                            StatItemView(label: "Roadmaps", value: "\(roadmaps.count)")
                             StatItemView(label: "Entries", value: "\(totalEntries)")
                             StatItemView(label: "Sprouted", value: "\(completedEntries)")
                         }
@@ -81,7 +81,7 @@ struct RoadmapScreen: View {
                             ContentUnavailableView(
                                 "No Roadmap Yet",
                                 systemImage: "target",
-                                description: Text("Add a collection to start tracking your journey.")
+                                description: Text("Add a roadmap to start tracking your journey.")
                             )
                             Spacer()
                         }
@@ -603,25 +603,6 @@ struct RoadmapDetailView: View {
         .navigationDestination(item: $selectedMilestone) { milestone in
             EntryDetailView(entry: milestone)
         }
-        .alert("Photo Suggested", isPresented: $showPhotoSuggestionAlert) {
-            Button("Complete Anyway", role: .cancel) {
-                if let milestone = milestonePendingCompletion {
-                    withAnimation {
-                        milestone.isCompleted = true
-                        milestone.completedAt = Date()
-                        try? modelContext.save()
-                    }
-                }
-            }
-            Button("Add Photo") {
-                if let milestone = milestonePendingCompletion {
-                    // This instantly triggers the navigation to EntryDetailView
-                    selectedMilestone = milestone
-                }
-            }
-        } message: {
-            Text("Your recollection screen looks best with photos! Want to add one before finishing this lesson?")
-        }
         .alert("Delete Roadmap?", isPresented: $showDeleteRoadmapAlert) {
             Button("Cancel", role: .cancel) { }
 
@@ -791,14 +772,10 @@ struct RoadmapDetailView: View {
             if milestone.isCompleted {
                 milestone.isCompleted = false
                 milestone.completedAt = nil
-            } else if milestone.imageData != nil {
+            }
+            else {
                 milestone.isCompleted = true
                 milestone.completedAt = Date()
-                try? modelContext.save()
-            } else {
-                // No photo: Suggest it, but don't block them
-                milestonePendingCompletion = milestone
-                showPhotoSuggestionAlert = true
             }
 
             try? modelContext.save()
@@ -842,12 +819,6 @@ struct EntryRowView: View {
                     .foregroundColor(milestone.isCompleted ? .primary.opacity(0.55) : .primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-
-                if !milestone.isCompleted && milestone.imageData == nil {
-                    Text("Photo required to finish")
-                        .font(.caption2)
-                        .foregroundColor(.red)
-                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())

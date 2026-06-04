@@ -34,12 +34,12 @@ struct EntryDetailView: View {
                         VStack(alignment: .leading, spacing: 20) {
                             // Title
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Lesson Title")
+                                Text("Milestone")
                                     .font(.caption)
                                     .fontWeight(.bold)
                                     .foregroundColor(.gray)
 
-                                TextField("Entry Title", text: $entry.title, axis: .vertical)
+                                TextField("Milestone Title", text: $entry.title, axis: .vertical)
                                     .font(.title2)
                                     .fontWeight(.bold)
                                     .textFieldStyle(PlainTextFieldStyle())
@@ -227,7 +227,7 @@ struct EntryDetailView: View {
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
-                Text("Are you sure you want to delete this lesson? This action cannot be undone.")
+                Text("Are you sure you want to delete this milestone? This action cannot be undone.")
             }
             .onChange(of: entry.title) { _, _ in
                 try? modelContext.save()
