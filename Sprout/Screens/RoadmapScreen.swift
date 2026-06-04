@@ -104,7 +104,7 @@ struct RoadmapScreen: View {
                 }
             }
             .navigationDestination(for: Roadmap.self) { roadmap in
-                RoadmapDetailView(roadmap: roadmap)
+                RoadmapDetailView(roadmap: roadmap, navigationPath: $navigationPath)
             }
             .onAppear {
                 seedInitialRoadmapsIfNeeded()
@@ -285,7 +285,8 @@ struct RoadmapDetailView: View {
     private let maxMilestones = 20
 
     @State private var newMilestoneTitle = ""
-    @State private var showImageRequiredAlert = false
+    @State private var showPhotoSuggestionAlert = false
+    @State private var milestonePendingCompletion: Milestone? = nil
     @State private var selectedMilestone: Milestone? = nil
     @State private var showTitleRequired = false
 
