@@ -17,6 +17,7 @@ struct CameraScreen: View {
     @State private var imageToPass: CameraScreenImage? = nil
     
     @State private var flashPulse = false
+    @State private var showGrid = false
     @State private var timerActive = false
     @State private var timerCount = 0
     
@@ -68,6 +69,11 @@ struct CameraScreen: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
                             .stroke(Color(.opaqueSeparator).opacity(0.35), lineWidth: 1)
+                    )
+                    .overlay(
+                        Group {
+                            if showGrid { GridOverlay() }
+                        }
                     )
                     .padding(.horizontal, 20)
                     .padding(.top, 72)
@@ -124,6 +130,9 @@ struct CameraScreen: View {
                                 .transition(.opacity.combined(with: .move(edge: .top))) // Smooth entrance
                         }
                         HStack(spacing: 16) {
+                            cameraOptionButton(icon: "rectangle.grid.3x3", active: showGrid) {
+                                showGrid.toggle()
+                            }
                             cameraOptionButton(icon: "clock", active: timerActive) {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     timerActive.toggle()
