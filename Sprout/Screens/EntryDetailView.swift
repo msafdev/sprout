@@ -54,19 +54,22 @@ struct EntryDetailView: View {
                                     .font(.caption)
                                     .fontWeight(.bold)
                                     .foregroundColor(.gray)
+                                
+                                    
 
                                 ZStack(alignment: .topTrailing) {
                                     PhotosPicker(selection: $selectedImage, matching: .images, photoLibrary: .shared()) {
                                         if let entryImage {
                                             entryImage
                                                 .resizable()
-                                                .aspectRatio(4/3, contentMode: .fill)
-                                                .frame(maxWidth: .infinity)
+                                                .scaledToFit() // Maintains original aspect ratio
+                                                .frame(maxWidth: .infinity) // Stretches to fit horizontal width
                                                 .clipShape(RoundedRectangle(cornerRadius: 14))
                                         } else {
+                                            // Placeholder: Use a fixed height for the "Add Photo" state
                                             RoundedRectangle(cornerRadius: 14)
                                                 .fill(Color.appBackground)
-                                                .aspectRatio(4/3, contentMode: .fit)
+                                                .frame(height: 200) // Fixed height for placeholder
                                                 .overlay(
                                                     VStack(spacing: 10) {
                                                         Image(systemName: "plus.circle")
@@ -79,6 +82,7 @@ struct EntryDetailView: View {
                                                 )
                                         }
                                     }
+                                    .frame(maxWidth: .infinity) // Allows width to fill the screen
                                     .onChange(of: selectedImage) { _, newItem in
                                         guard let item = newItem else { return }
                                         Task {
@@ -89,6 +93,7 @@ struct EntryDetailView: View {
                                         }
                                     }
 
+                                    // Delete Button
                                     if entry.imageData != nil {
                                         Button(action: {
                                             entry.imageData = nil
