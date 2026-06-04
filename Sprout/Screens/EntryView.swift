@@ -72,99 +72,54 @@ struct EntryView: View {
     
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground).ignoresSafeArea()
-            VStack(spacing: 0) {
-                // --- TOP NAVIGATION BAR ---
+            AppGradientBackground()
+            
+            VStack(spacing: 16) {
+                // --- TOP NAVIGATION ---
                 HStack {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 38, height: 38)
-                            .background(Color.oliveSprout.opacity(0.85))
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.black)
+                            .frame(width: 44, height: 44)
+                            .background(Color.black.opacity(0.06))
                             .clipShape(Circle())
                     }
+                    
                     Spacer()
-                    VStack(spacing: 4) {
-                        Text(selectedRoadmap == nil ? "Create Journey" : "Log Progress")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.black)
-                        Text(selectedRoadmap == nil ? "Start a new roadmap and save your learning snapshot." : "Add a new entry to an existing roadmap.")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary)
+                    
+                    // Olive Green Save Button - Changes opacity depending on form validity
+                    Button(action: {
+                        saveLogEntry()
+                    }) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color(red: 0.65, green: 0.70, blue: 0.30).opacity(isFormValid ? 1.0 : 0.4))
+                            .clipShape(Circle())
                     }
-                    Spacer()
-                    Color.clear.frame(width: 38, height: 38)
+                    .disabled(!isFormValid)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .padding(.top, 10)
-                .padding(.bottom, 16)
-                .background(Color.white)
                 
+                // --- SINGLE UNIFIED CONTENT CARD ---
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 20) {
-                        // --- 1. CAPTURED MEDIA WORKSPACE PREVIEW ---
-                        VStack(alignment: .leading, spacing: 14) {
-                            HStack(spacing: 10) {
-                                Text("Captured Snapshot")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(.black)
-                                Spacer()
-                                Text("Attached")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.oliveSprout)
-                                    .clipShape(Capsule())
-                            }
-                            Image(uiImage: capturedImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 240)
-                                .frame(maxWidth: .infinity)
-                                .clipShape(RoundedRectangle(cornerRadius: 24))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 24)
-                                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
-                                )
-                            Text("This image will be saved with your roadmap entry and lesson details.")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                        .padding(20)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
                         
-                        // --- 2. ROADMAP TITLE INPUT / DROPDOWN ---
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "map")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(Color.oliveSprout)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Roadmap Title")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.black)
-                                    Text(selectedRoadmap == nil ? "Create a new roadmap or pick an existing one." : "Selected roadmap will be updated with this entry.")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
+                        // 1. ROADMAP TRACKING SECTION
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Roadmap")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.gray.opacity(0.7))
+                            
                             HStack {
                                 TextField("e.g., Machining Fundamentals", text: $collectionText, onEditingChanged: { isEditing in
                                     withAnimation { isRoadmapDropdownFocused = isEditing }
                                 })
-                                .onChange(of: collectionText) { _, newValue in
-                                    if let selected = selectedRoadmap, selected.title != newValue {
-                                        selectedRoadmap = nil
-                                        selectedMilestone = nil
-                                        milestoneTitleText = ""
-                                    }
-                                }
-                                .font(.system(size: 15))
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.black)
                                 
                                 if selectedRoadmap != nil {
                                     Button(action: {
@@ -173,16 +128,12 @@ struct EntryView: View {
                                         collectionText = ""
                                         milestoneTitleText = ""
                                     }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.gray)
+                                        Image(systemName: "xmark.circle.fill").foregroundColor(.gray.opacity(0.6))
                                     }
                                 }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
                             
+                            // Inline Suggestion Dropdown for Existing Roadmaps
                             if isRoadmapDropdownFocused && !filteredRoadmaps.isEmpty {
                                 VStack(alignment: .leading, spacing: 0) {
                                     ForEach(filteredRoadmaps) { roadmap in
@@ -190,105 +141,66 @@ struct EntryView: View {
                                             selectedRoadmap = roadmap
                                             collectionText = roadmap.title
                                             isRoadmapDropdownFocused = false
-                                            hideKeyboard()
+                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                                         }) {
                                             HStack {
-                                                Circle()
-                                                    .fill(Color.fromHex(roadmap.colorHex))
-                                                    .frame(width: 12, height: 12)
                                                 Text(roadmap.title)
+                                                    .font(.system(size: 15, weight: .medium))
                                                     .foregroundColor(.black)
                                                 Spacer()
+                                                Image(systemName: "arrow.up.left.circle").foregroundColor(.gray)
                                             }
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 12)
+                                            .padding(.vertical, 10)
+                                            .padding(.horizontal, 4)
                                         }
-                                        Divider().padding(.horizontal, 16)
+                                        Divider()
                                     }
                                 }
-                                .background(Color(.systemBackground))
-                                .cornerRadius(16)
-                                .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
+                                .padding(.top, 6)
                             }
                         }
-                        .padding(20)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
                         
-                        // --- 3. DYNAMIC ROADMAP GOAL DESCRIPTION FIELD ---
+                        // Dynamic Goal Description Input (Shown only if creating a new Roadmap)
                         if selectedRoadmap == nil {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Color.clear.frame(height: 0) // Anchor for layout clean transition
-                                HStack(spacing: 10) {
-                                    Image(systemName: "lightbulb")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(Color.oliveSprout)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Roadmap Goal Description")
-                                            .font(.system(size: 16, weight: .bold))
-                                            .foregroundColor(.black)
-                                        Text("Describe the learning outcome for this roadmap.")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                                TextField("A beginner-friendly roadmap for cutting tools...", text: $goalDescriptionText, axis: .vertical)
-                                    .lineLimit(2...3)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 14)
-                                    .background(Color(.systemGray6))
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                            Divider().background(Color.gray.opacity(0.15))
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Roadmap Goal Description")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(.gray.opacity(0.7))
+                                
+                                TextField("Describe the ultimate target of this track...", text: $goalDescriptionText, axis: .vertical)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.black)
                             }
-                            .padding(20)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 24))
-                            .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                         
-                        // --- 4. MILESTONE TITLE INPUT & INCOMPLETE DROPDOWN ---
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "list.bullet.rectangle")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(Color.oliveSprout)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Milestone / Lesson Title")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.black)
-                                    Text(collectionText.isEmpty ? "Enter a roadmap title first to enable milestone selection." : "Choose an existing incomplete milestone or start a new one.")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
+                        Divider().background(Color.gray.opacity(0.15))
+                        
+                        // 2. LESSON / MILESTONE TITLE SECTION
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Lesson Title")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.gray.opacity(0.7))
+                            
                             HStack {
-                                TextField("e.g., Cutting Tool Components", text: $milestoneTitleText, onEditingChanged: { isEditing in
+                                TextField("Enter lesson title", text: $milestoneTitleText, onEditingChanged: { isEditing in
                                     withAnimation { isMilestoneDropdownFocused = isEditing }
                                 })
-                                .disabled(collectionText.isEmpty)
-                                .onChange(of: milestoneTitleText) { _, newValue in
-                                    if let selected = selectedMilestone, selected.title != newValue {
-                                        selectedMilestone = nil
-                                    }
-                                }
-                                .font(.system(size: 15))
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.black)
                                 
                                 if selectedMilestone != nil {
                                     Button(action: {
                                         selectedMilestone = nil
                                         milestoneTitleText = ""
                                     }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.gray)
+                                        Image(systemName: "xmark.circle.fill").foregroundColor(.gray.opacity(0.6))
                                     }
                                 }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .background(collectionText.isEmpty ? Color(.systemGray5) : Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
                             
+                            // Inline Suggestion Dropdown for Incomplete Milestones
                             if isMilestoneDropdownFocused && selectedRoadmap != nil && !filteredMilestones.isEmpty {
                                 VStack(alignment: .leading, spacing: 0) {
                                     ForEach(filteredMilestones) { milestone in
@@ -298,132 +210,105 @@ struct EntryView: View {
                                             entriesText = milestone.content
                                             selectedMood = milestone.emotionLevel
                                             isMilestoneDropdownFocused = false
-                                            hideKeyboard()
+                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                                         }) {
                                             HStack {
-                                                Image(systemName: "circle")
-                                                    .foregroundColor(.gray)
                                                 Text(milestone.title)
+                                                    .font(.system(size: 15, weight: .medium))
                                                     .foregroundColor(.black)
                                                 Spacer()
+                                                Text("Pending")
+                                                    .font(.system(size: 11, weight: .bold))
+                                                    .foregroundColor(.orange)
                                             }
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 12)
+                                            .padding(.vertical, 10)
+                                            .padding(.horizontal, 4)
                                         }
-                                        Divider().padding(.horizontal, 16)
+                                        Divider()
                                     }
                                 }
-                                .background(Color(.systemBackground))
-                                .cornerRadius(16)
-                                .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
+                                .padding(.top, 6)
                             }
                         }
-                        .padding(20)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
                         
-                        // --- 5. EXPLANATION DATA RECORD FIELD ---
-                        VStack(alignment: .leading, spacing: 14) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "square.and.pencil")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(Color.oliveSprout)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Explanation")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.black)
-                                    Text("Write a quick note for how this lesson felt and what you learned.")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            TextField("Most cutting tools can be understood as variations...", text: $entriesText, axis: .vertical)
-                                .lineLimit(4...8)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
-                                .background(Color(.systemGray6))
+                        Divider().background(Color.gray.opacity(0.15))
+                        
+                        // 3. BOUNDED PHOTO PREVIEW (Prevents screen blowout)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Photo")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.gray.opacity(0.7))
+                            
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.05))
+                                .frame(height: 260)
+                                .frame(maxWidth: .infinity)
+                                .overlay(
+                                    Image(uiImage: capturedImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                )
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .clipped()
                         }
-                        .padding(20)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
                         
-                        // --- 6. FEELING SCORE MOOD PICKER ---
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "face.smiling")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(Color.oliveSprout)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("How did it feel after finishing this lesson?")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.black)
-                                    Text("Tap one leaf to capture your mood.")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            HStack(spacing: 20) {
+                        Divider().background(Color.gray.opacity(0.15))
+                        
+                        // 4. LESSON EXPLANATION FIELD
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Explanation")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.gray.opacity(0.7))
+                            
+                            TextField("Write your explanation here...", text: $entriesText, axis: .vertical)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(.black)
+                                .frame(minHeight: 70, alignment: .top)
+                        }
+                        
+                        Divider().background(Color.gray.opacity(0.15))
+                        
+                        // 5. ASSET-BASED EMOTION PICKER
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("How did you feel?")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.gray.opacity(0.7))
+                            
+                            HStack(spacing: 16) {
                                 let moodAssets = ["s_angry", "s_confused", "s_sad", "s_flat", "s_happy"]
                                 
                                 ForEach(0..<moodAssets.count, id: \.self) { index in
-                                        let isSelected = selectedMood == index + 1
-                                        
-                                        Button(action: {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                                selectedMood = index + 1
-                                            }
-                                        }) {
-                                            Image(moodAssets[index])
-                                                .resizable()
-                                                .scaledToFit()
-                                                // Selected: 48x48, Non-selected: 36x36
-                                                .frame(width: isSelected ? 48 : 36, height: isSelected ? 48 : 36)
-                                                // Scaling effect for smooth transition
-                                                .scaleEffect(isSelected ? 1.2 : 1.0)
-                                                .opacity(isSelected ? 1.0 : 0.6) // Optional: fade non-selected
-                                        }
-                                        .frame(maxWidth: .infinity)
+                                    let level = index + 1
+                                    let isSelected = selectedMood == level
+                                    
+                                    Button(action: {
+                                        selectedMood = level
+                                    }) {
+                                        Image(moodAssets[index])
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 36, height: 36)
+                                            .scaleEffect(isSelected ? 1.2 : 1.0)
+                                            .opacity(isSelected ? 1.0 : 0.45)
+                                            // The animation modifier goes here, tied to the selectedMood state
+                                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: selectedMood)
                                     }
-                                }
-                                .padding(.vertical, 10)
-                        }
-                        .padding(20)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.04), radius: 14, x: 0, y: 6)
-                        
-                        // --- 7. SUBMIT PERSISTENCE ACTION TRIGGER ---
-                        VStack(spacing: 12) {
-                            Button(action: saveLogEntry) {
-                                Text(selectedMilestone != nil ? "🚀 Complete Existing Milestone" : "🌱 Create & Complete New Milestone")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(isFormValid ? Color.oliveSprout : Color.gray)
-                                    .clipShape(Capsule())
+                                }
                             }
-                            .disabled(!isFormValid)
-                            
-                            Text("Your roadmap, milestone, and image will save together in one action.")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: .infinity)
                         }
-                        .padding(.top, 6)
                     }
+                    .padding(24)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 28))
+                    .shadow(color: Color.black.opacity(0.02), radius: 12, x: 0, y: 4)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 30)
                 }
             }
         }
-        .navigationBarHidden(true)
     }
-    
+
     // --- PERSISTENCE HANDLER ACTION ---
     private func saveLogEntry() {
         guard isFormValid else { return }
@@ -476,7 +361,7 @@ struct EntryView: View {
         // 1. Commit everything nicely to disk
         try? modelContext.save()
         
-        // 2. 🛠️ THE FIX: Force MainTabView to snap to RoadmapScreen (Index 2)
+        // 2. Force MainTabView to snap to RoadmapScreen (Index 2)
         selectedTab = 2
         
         // 3. Clear our sheet context or overlay wrappers

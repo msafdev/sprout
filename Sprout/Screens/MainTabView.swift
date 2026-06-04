@@ -22,7 +22,7 @@ struct MainTabView: View {
             case 2:
                 RoadmapScreen(navigationPath: $roadmapPath)
             default:
-                RecollectScreen()
+                RoadmapScreen(navigationPath: $roadmapPath)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -255,9 +255,10 @@ struct CalendarDayCell: View {
     let milestones: [Milestone]
     let onSelect: () -> Void
     
-    // Logic to extract image from milestones
+    // 1. UPDATED: Find the first milestone that actually has image data
     private var cellImage: Image? {
-        guard let data = milestones.first?.imageData,
+        guard let milestoneWithImage = milestones.first(where: { $0.imageData != nil }),
+              let data = milestoneWithImage.imageData,
               let uiImage = UIImage(data: data) else { return nil }
         return Image(uiImage: uiImage)
     }
@@ -275,6 +276,7 @@ struct CalendarDayCell: View {
                     // Photo-based cell when milestones exist
                     ZStack(alignment: .topTrailing) {
                         if let cellImage {
+                            // User's uploaded photo
                             cellImage
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
@@ -283,10 +285,14 @@ struct CalendarDayCell: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                                 .clipped()
                         } else {
-                            // Fallback if milestone exists but image data is missing
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color.appAccent.opacity(min(1.0, 0.4 + Double(count) * 0.18)))
+                            // 2. UPDATED: Fallback placeholder image when database returns nil
+                            Image("sus") // <-- Put your asset name here
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
                                 .aspectRatio(1, contentMode: .fit)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .clipped()
                         }
                         
                         // Dark overlay for legibility
@@ -332,7 +338,6 @@ struct CalendarDayCell: View {
         .buttonStyle(EmptyTabButtonStyle())
     }
 }
-
 // MARK: - Profile & Settings View
 struct ProfileSheetView: View {
     @Environment(\.dismiss) private var dismiss

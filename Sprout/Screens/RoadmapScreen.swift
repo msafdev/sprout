@@ -263,7 +263,8 @@ struct RoadmapDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var newMilestoneTitle = ""
-    @State private var showImageRequiredAlert = false
+    @State private var showPhotoSuggestionAlert = false
+    @State private var milestonePendingCompletion: Milestone? = nil
     @State private var selectedMilestone: Milestone? = nil
     @State private var showTitleRequired = false
     @State private var partial: NodesData.PartiallyGenerated?
@@ -500,10 +501,24 @@ struct RoadmapDetailView: View {
         .navigationDestination(item: $selectedMilestone) { milestone in
             EntryDetailView(entry: milestone)
         }
-        .alert("Photo required", isPresented: $showImageRequiredAlert) {
-            Button("OK", role: .cancel) { }
+        .alert("Photo Suggested", isPresented: $showPhotoSuggestionAlert) {
+            Button("Complete Anyway", role: .cancel) {
+                if let milestone = milestonePendingCompletion {
+                    withAnimation {
+                        milestone.isCompleted = true
+                        milestone.completedAt = Date()
+                        try? modelContext.save()
+                    }
+                }
+            }
+            Button("Add Photo") {
+                if let milestone = milestonePendingCompletion {
+                    // This instantly triggers the navigation to EntryDetailView
+                    selectedMilestone = milestone
+                }
+            }
         } message: {
-            Text("Add a photo in the entry detail before marking this lesson as finished.")
+            Text("Your recollection screen looks best with photos! Want to add one before finishing this lesson?")
         }
     }
     
@@ -558,16 +573,20 @@ struct RoadmapDetailView: View {
     private func toggleMilestone(_ milestone: Milestone) {
         withAnimation {
             if milestone.isCompleted {
+                // Revert completion
                 milestone.isCompleted = false
                 milestone.completedAt = nil
+                try? modelContext.save()
             } else if milestone.imageData != nil {
+                // Has a photo, complete immediately
                 milestone.isCompleted = true
                 milestone.completedAt = Date()
+                try? modelContext.save()
             } else {
-                showImageRequiredAlert = true
-                return
+                // No photo: Suggest it, but don't block them
+                milestonePendingCompletion = milestone
+                showPhotoSuggestionAlert = true
             }
-            try? modelContext.save()
         }
     }
 

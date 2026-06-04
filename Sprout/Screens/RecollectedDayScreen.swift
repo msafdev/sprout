@@ -45,39 +45,43 @@ struct RecollectDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Roadmap Tabs
-                if !roadmapsForDay.isEmpty {
-                    Picker("Roadmap", selection: $selectedRoadmapID) {
-                        ForEach(roadmapsForDay, id: \.persistentModelID) { roadmap in
-                            Text(roadmap.title ?? "Unknown").tag(Optional(roadmap.persistentModelID))
+        ZStack{
+            AppGradientBackground()
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Roadmap Tabs
+                    if !roadmapsForDay.isEmpty {
+                        Picker("Roadmap", selection: $selectedRoadmapID) {
+                            ForEach(roadmapsForDay, id: \.persistentModelID) { roadmap in
+                                Text(roadmap.title ?? "Unknown").tag(Optional(roadmap.persistentModelID))
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 24)
+                        .onChange(of: selectedRoadmapID) { selectedMilestoneIndex = 0 }
                     }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal, 24)
-                    .onChange(of: selectedRoadmapID) { selectedMilestoneIndex = 0 }
-                }
 
-                // Main Slider
-                if !milestonesForSelectedRoadmap.isEmpty {
-                    TabView(selection: $selectedMilestoneIndex) {
-                        ForEach(0..<milestonesForSelectedRoadmap.count, id: \.self) { i in
-                            MilestonePhotoView(milestone: milestonesForSelectedRoadmap[i])
-                                .tag(i)
+                    // Main Slider
+                    if !milestonesForSelectedRoadmap.isEmpty {
+                        TabView(selection: $selectedMilestoneIndex) {
+                            ForEach(0..<milestonesForSelectedRoadmap.count, id: \.self) { i in
+                                MilestonePhotoView(milestone: milestonesForSelectedRoadmap[i])
+                                    .tag(i)
+                            }
                         }
+                        .tabViewStyle(.page(indexDisplayMode: .always))
+                        .frame(height: 400)
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .padding(.horizontal, 24)
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .always))
-                    .frame(height: 400)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .padding(.horizontal, 24)
-                }
 
-                // Date Navigation
-                DateNavigationRow(currentDate: $currentDate, dates: datesWithMilestones)
-                    .padding(.top, 10)
+                    // Date Navigation
+                    DateNavigationRow(currentDate: $currentDate, dates: datesWithMilestones)
+                        .padding(.top, 10)
+                }
+                .padding(.top, 20)
             }
-            .padding(.top, 20)
+
         }
         .background(Color.appBackground)
         .navigationTitle(PresentationHelpers.formattedDateOrdinal(currentDate))
@@ -104,7 +108,10 @@ struct MilestonePhotoView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } else {
-                Color.gray.opacity(0.15)
+                // UPDATED: Placeholder image instead of a gray color block
+                Image("sus") // <-- Use the same asset name here
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
             }
         }
         .frame(width: 340, height: 400) // Force the image size to match the TabView frame
@@ -140,7 +147,6 @@ struct MilestonePhotoView: View {
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
 }
-
 struct DateNavigationRow: View {
     @Binding var currentDate: Date
     let dates: [Date]
