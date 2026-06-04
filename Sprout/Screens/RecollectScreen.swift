@@ -231,26 +231,27 @@ struct MonthCalendarView: View {
             // Grid
                     let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
                     
-                    LazyVGrid(columns: columns, spacing: 10) {
-                        ForEach(0..<firstWeekdayOffset, id: \.self) { _ in
-                            // Fixed: Changed Spacer() to Color.clear for grid cell stability
-                            Color.clear
-                                .frame(height: 44)
-                        }
-                        
-                        ForEach(1...daysInMonth, id: \.self) { day in
-                            let date = dateForDay(day)
-                            let dateMilestones = milestonesForDate(date)
-                            
-                            CalendarDayCell(
-                                day: day,
-                                isToday: calendar.isDateInToday(date),
-                                milestones: dateMilestones
-                            ) {
-                                onSelectDay(dateMilestones)
-                            }
-                        }
+            LazyVGrid(columns: columns, spacing: 10) {
+                
+                // 👇 FIX: Map the integers to unique strings so they don't hijack the day IDs!
+                ForEach((0..<firstWeekdayOffset).map { "padding-\($0)" }, id: \.self) { _ in
+                    Color.clear
+                        .frame(height: 44)
+                }
+                
+                ForEach(1...daysInMonth, id: \.self) { day in
+                    let date = dateForDay(day)
+                    let dateMilestones = milestonesForDate(date)
+                    
+                    CalendarDayCell(
+                        day: day,
+                        isToday: calendar.isDateInToday(date),
+                        milestones: dateMilestones
+                    ) {
+                        onSelectDay(dateMilestones)
                     }
+                }
+            }
                     // 👇 CRITICAL FIX: Forces SwiftUI to reset layout cache when the month changes
                     .id(calendarMonthID)
                 }
@@ -335,6 +336,7 @@ struct MonthCalendarView: View {
         }
     }
 }
+
 // MARK: - Gaby's Visual Calendar Cell Style
 struct CalendarDayCell: View {
     let day: Int
