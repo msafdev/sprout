@@ -49,15 +49,27 @@ struct RecollectDetailView: View {
             AppGradientBackground()
             ScrollView {
                 VStack(spacing: 20) {
-                    // Roadmap Tabs
+                    // Roadmap Horizontal Scroll
                     if !roadmapsForDay.isEmpty {
-                        Picker("Roadmap", selection: $selectedRoadmapID) {
-                            ForEach(roadmapsForDay, id: \.persistentModelID) { roadmap in
-                                Text(roadmap.title ?? "Unknown").tag(Optional(roadmap.persistentModelID))
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(roadmapsForDay, id: \.persistentModelID) { roadmap in
+                                    Button(action: {
+                                        selectedRoadmapID = roadmap.persistentModelID
+                                    }) {
+                                        Text(roadmap.title ?? "Unknown")
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .padding(.vertical, 8)
+                                            .padding(.horizontal, 16)
+                                            .background(selectedRoadmapID == roadmap.persistentModelID ? Color.appAccent : Color.gray.opacity(0.1))
+                                            .foregroundColor(selectedRoadmapID == roadmap.persistentModelID ? Color(UIColor.systemBackground) : .primary)
+                                            .clipShape(Capsule())
+                                    }
+                                }
                             }
+                            .padding(.horizontal, 24)
                         }
-                        .pickerStyle(.segmented)
-                        .padding(.horizontal, 24)
                         .onChange(of: selectedRoadmapID) { selectedMilestoneIndex = 0 }
                     }
 
@@ -147,24 +159,34 @@ struct MilestonePhotoView: View {
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
 }
+
 struct DateNavigationRow: View {
     @Binding var currentDate: Date
     let dates: [Date]
     
     var body: some View {
         let idx = dates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDate) }) ?? 0
+        
         HStack(spacing: 40) {
-            Button(action: { currentDate = dates[idx - 1] }) {
-                Label("Prev", systemImage: "arrow.left")
+            // Only show "Previous days" if there is a date before the current one
+            if idx > 0 {
+                Button(action: { currentDate = dates[idx - 1] }) {
+                    Label("Previous days", systemImage: "arrow.left")
+                }
             }
-            .disabled(idx == 0)
             
-            Button(action: { currentDate = dates[idx + 1] }) {
-                Label("Next", systemImage: "arrow.right")
+            Spacer() // This pushes the buttons apart if only one is visible
+            
+            // Only show "Next days" if there is a date after the current one
+            if idx < dates.count - 1 {
+                Button(action: { currentDate = dates[idx + 1] }) {
+                    Label("Next days", systemImage: "arrow.right")
+                }
             }
-            .disabled(idx == dates.count - 1)
         }
-        .font(.subheadline).foregroundColor(.secondary)
+        .font(.subheadline)
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 24) // Added padding to keep them off the edges
     }
 }
 
