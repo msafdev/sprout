@@ -68,7 +68,9 @@ struct RecollectScreen: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: { showingProfileSheet = true }) {
-                        Image(systemName: "person.crop.circle").font(.system(size: 24))
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(Color.appAccent)
                     }
                 }
             }
@@ -170,11 +172,12 @@ struct MonthCalendarView: View {
                     }
                 }) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.primary)
-                        .frame(width: 36, height: 36)
-                        .background(Color(.systemGray6))
-                        .clipShape(Circle())
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.primary)
+                    .frame(width: 36, height: 36)
+                    .background(Color.appCard)
+                    .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+                    .clipShape(Circle())
                 }
                 
                 Spacer()
@@ -210,11 +213,12 @@ struct MonthCalendarView: View {
                     }
                 }) {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.primary)
-                        .frame(width: 36, height: 36)
-                        .background(Color(.systemGray6))
-                        .clipShape(Circle())
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.primary)
+                    .frame(width: 36, height: 36)
+                    .background(Color.appCard)
+                    .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+                    .clipShape(Circle())
                 }
             }
             
@@ -414,7 +418,7 @@ struct CalendarDayCell: View {
                             .foregroundColor(Color.appAccent)
                     } else {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(.systemGray6).opacity(0.4))
+                            .fill(Color.appCard.opacity(0.6))
                             .aspectRatio(1, contentMode: .fit)
                         
                         Text("\(day)")
@@ -431,7 +435,6 @@ struct CalendarDayCell: View {
 struct ProfileSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("notificationsEnabled") private var notificationsEnabled = false
-    @AppStorage("reduceMotion") private var reduceMotion = false
 
     @State private var showNotificationDeniedAlert = false
 
@@ -440,12 +443,12 @@ struct ProfileSheetView: View {
             List {
                 // MARK: Preferences
                 Section(header: Text("Preferences")) {
-                    Toggle(isOn: $reduceMotion) {
-                        Label("Reduce Motion", systemImage: "hand.raised.fill")
-                    }
-
                     Toggle(isOn: $notificationsEnabled) {
-                        Label("Daily Reminder", systemImage: "bell.fill")
+                        HStack(spacing: 12) {
+                            Image(systemName: "bell.fill")
+                                .foregroundColor(Color.appAccent)
+                            Text("Daily Reminder")
+                        }
                     }
                     .onChange(of: notificationsEnabled) { _, enabled in
                         if enabled {
@@ -462,13 +465,15 @@ struct ProfileSheetView: View {
                     LabeledContent("Developer", value: "Team 18")
                 }
             }
-            .navigationTitle("Profile & Settings")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AppGradientBackground())
             .alert("Notifications Disabled", isPresented: $showNotificationDeniedAlert) {
                 Button("Open Settings") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -481,6 +486,7 @@ struct ProfileSheetView: View {
             } message: {
                 Text("Please enable notifications for Sprout in Settings to receive daily reminders.")
             }
+            .tint(Color.appAccent)
         }
     }
 
