@@ -39,7 +39,7 @@ struct RoadmapScreen: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Roadmap")
                                 .font(.system(size: 34, weight: .bold))
-                                .foregroundColor(.white.opacity(0.85))
+                                .foregroundColor(.primary.opacity(0.85))
                             Text("Track your progress toward your dreams")
                                 .font(.subheadline)
                                 .foregroundColor(.primary.opacity(0.8))
@@ -71,7 +71,7 @@ struct RoadmapScreen: View {
                             label: "Planted",
                             scaleX: 2.5,
                             scaleY: 2.0,
-                            offsetY: -8
+                            offsetY: -7.5
                         )
                         DashboardStatCard(
                             iconName: "animation 5",
