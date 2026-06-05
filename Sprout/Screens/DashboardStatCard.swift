@@ -9,10 +9,12 @@ import SwiftUI
 
 // MARK: - Dashboard Stat Card
 struct DashboardStatCard: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     let iconName: String
     let value: Int
     let label: String
-    
+
     var scaleX: CGFloat
     var scaleY: CGFloat
     var offsetY: CGFloat
@@ -45,8 +47,20 @@ struct DashboardStatCard: View {
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity, maxHeight: 80)
         .background(
+            //            LinearGradient(
+            //                colors: if colorScheme == .dark {
+            //                    [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")]
+            //                } else {
+            //                    [Color.fromHex("#BEC740"), Color.fromHex("#73741A")]
+            //                },
+            //                startPoint: .topLeading,
+            //                endPoint: .bottomTrailing
+            //            )
+
             LinearGradient(
-                colors: [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
+                colors: colorScheme == .dark
+                    ? [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")]
+                    : [Color.fromHex("#BEC740"), Color.fromHex("#73741A")],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

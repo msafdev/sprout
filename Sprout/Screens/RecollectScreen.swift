@@ -379,7 +379,7 @@ struct CalendarDayCell: View {
                                 .clipped()
                         } else {
                             // 2. UPDATED: Fallback placeholder image when database returns nil
-                            Image("sus") // <-- Put your asset name here
+                            Image("placeholder") // <-- Put your asset name here
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)

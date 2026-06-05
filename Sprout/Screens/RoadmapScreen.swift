@@ -547,8 +547,10 @@ struct RoadmapDetailView: View {
             HStack {
                 Button(action: {
                     if roadmap.title.trimmingCharacters(in: .whitespaces).isEmpty {
-                        modelContext.delete(roadmap)
-                        try? modelContext.save()
+                        if let ctx = roadmap.modelContext {
+                            ctx.delete(roadmap)
+                            try? ctx.save()
+                        }
                     }
 
                     dismiss()
@@ -567,6 +569,9 @@ struct RoadmapDetailView: View {
                     if roadmap.title.trimmingCharacters(in: .whitespaces).isEmpty {
                         withAnimation { showTitleRequired = true }
                     } else {
+                        if roadmap.modelContext == nil {
+                            modelContext.insert(roadmap)
+                        }
                         try? modelContext.save()
                         dismiss()
                     }
@@ -679,6 +684,9 @@ struct RoadmapDetailView: View {
         guard !cleanTitle.isEmpty else { return }
 
         withAnimation {
+            if roadmap.modelContext == nil {
+                modelContext.insert(roadmap)
+            }
             let newMilestone = Milestone(title: cleanTitle)
             newMilestone.roadmap = roadmap
             roadmap.milestones.append(newMilestone)
@@ -739,6 +747,9 @@ struct RoadmapDetailView: View {
             return
         }
 
+        if roadmap.modelContext == nil {
+            modelContext.insert(roadmap)
+        }
         for item in parsedItems {
             let newMilestone = Milestone(title: item)
             newMilestone.roadmap = roadmap

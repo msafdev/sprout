@@ -23,8 +23,6 @@ struct CustomTabBar: View {
                     // MARK: - Instant Action Creation Button
                     Button(action: {
                         let roadmap = Roadmap(title: "", goalDescription: "", colorHex: "#9F9E32")
-                        modelContext.insert(roadmap)
-                        try? modelContext.save()
                         
                         // 1. Force screen switch to the Roadmap tab container
                         selectedTab = 2

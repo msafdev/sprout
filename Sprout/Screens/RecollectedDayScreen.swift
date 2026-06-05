@@ -121,7 +121,7 @@ struct MilestonePhotoView: View {
                     .aspectRatio(contentMode: .fill)
             } else {
                 // UPDATED: Placeholder image instead of a gray color block
-                Image("sus") // <-- Use the same asset name here
+                Image("placeholder") // <-- Use the same asset name here
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             }
