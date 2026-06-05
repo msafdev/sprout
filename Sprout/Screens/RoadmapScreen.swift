@@ -39,7 +39,7 @@ struct RoadmapScreen: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Roadmap")
                                 .font(.system(size: 34, weight: .bold))
-                                .foregroundColor(.primary)
+                                .foregroundColor(.white.opacity(0.85))
                             Text("Track your progress toward your dreams")
                                 .font(.subheadline)
                                 .foregroundColor(.primary.opacity(0.8))
@@ -68,12 +68,18 @@ struct RoadmapScreen: View {
                         DashboardStatCard(
                             iconName: "animation 1",
                             value: milestonesToSprout,
-                            label: "Planted"
+                            label: "Planted",
+                            scaleX: 2.5,
+                            scaleY: 2.0,
+                            offsetY: -8
                         )
                         DashboardStatCard(
                             iconName: "animation 5",
                             value: sproutedMilestones,
-                            label: "Sprouted"
+                            label: "Sprouted",
+                            scaleX: 2.0,
+                            scaleY: 2.0,
+                            offsetY: 5
                         )
                     }
                     .padding(.horizontal, 20)
@@ -132,54 +138,6 @@ struct RoadmapScreen: View {
 
         modelContext.insert(roadmap)
         try? modelContext.save()
-    }
-}
-
-// MARK: - Dashboard Stat Card
-struct DashboardStatCard: View {
-    let iconName: String
-    let value: Int
-    let label: String
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: -8) {
-                Text(label)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                Image(iconName)
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundStyle(.white)
-                    .scaleEffect(2.0)
-                    .offset(y: -5)
-            }
-            Spacer()
-
-            Text("\(value)")
-                .font(.system(size: 30, weight: .bold))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.trailing)
-                .lineLimit(1)
-                .truncationMode(.tail)
-        }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 18)
-        .frame(maxWidth: .infinity, maxHeight: 80)
-        .background(
-            LinearGradient(
-                colors: [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
