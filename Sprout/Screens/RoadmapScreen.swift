@@ -17,12 +17,16 @@ struct RoadmapScreen: View {
 
     @Binding var navigationPath: NavigationPath
 
-    var totalEntries: Int {
+    var totalMilestones: Int {
         roadmaps.reduce(0) { $0 + $1.milestones.count }
     }
 
-    var completedEntries: Int {
+    var sproutedMilestones: Int {
         roadmaps.reduce(0) { $0 + $1.milestones.filter { $0.isCompleted }.count }
+    }
+
+    var milestonesToSprout: Int {
+        max(0, totalMilestones - sproutedMilestones)
     }
 
     var body: some View {
@@ -60,18 +64,64 @@ struct RoadmapScreen: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
 
-                    HStack() {
-                        Spacer()
-                        HStack(spacing: 0) {
-                            StatItemView(label: "Roadmaps", value: "\(roadmaps.count)")
-                            StatItemView(label: "Entries", value: "\(totalEntries)")
-                            StatItemView(label: "Sprouted", value: "\(completedEntries)")
+                    HStack(alignment: .center, spacing: 6) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image("animation 5")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 60, height: 60)
+                            Text("Sprouted")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
                         }
-                        Spacer()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        VStack(spacing: 0) {
+                            Text("\(sproutedMilestones)")
+                                .font(.system(size: 30, weight: .bold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(width: 40, height: 56, alignment: .center)
+
+                        Rectangle()
+                            .fill(Color.white.opacity(0.4))
+                            .frame(width: 1, height: 56)
+
+                        VStack(spacing: 0) {
+                            Text("\(milestonesToSprout)")
+                                .font(.system(size: 30, weight: .bold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(width: 40, height: 56, alignment: .center)
+
+                        VStack(alignment: .trailing, spacing: 8) {
+                            Image("animation 1")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 60, height: 60)
+                            Text("To Sprout")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                     }
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 4)
                     .padding(.horizontal, 32)
-                    .background(Color.appAccent)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
+                    )
                     .cornerRadius(20)
                     .padding(.horizontal, 20)
 
@@ -136,16 +186,21 @@ struct RoadmapScreen: View {
 struct StatItemView: View {
     let label: String
     let value: String
+    let imageName: String
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 4) {
+            Image(imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 22)
             Text(value)
                 .font(.system(size: 24, weight: .bold))
-                .foregroundColor(colorScheme == .dark ? .black : .white)
+                .foregroundColor(colorScheme == .dark ? .white : .black)
             Text(label)
                 .font(.caption)
-                .foregroundColor(colorScheme == .dark ? .black.opacity(0.7) : .white.opacity(0.8))
+                .foregroundColor(colorScheme == .dark ? .white.opacity(0.9) : .black.opacity(0.7))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -230,7 +285,7 @@ struct RoadmapCardView: View {
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("\(totalCount) \(totalCount == 1 ? "Entry" : "Entries")")
+                Text("\(totalCount) \(totalCount == 1 ? "Milestone" : "Milestones")")
                     .font(.system(size: 15))
                     .foregroundColor(.gray)
 
@@ -277,7 +332,6 @@ struct RoadmapDetailView: View {
         roadmap.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     @State private var showDeleteRoadmapAlert = false
-    @State private var isCreatingContinuation = false
     @Bindable var roadmap: Roadmap
     @Binding var navigationPath: NavigationPath
 
@@ -285,13 +339,14 @@ struct RoadmapDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
-    private let maxMilestones = 20
-
     @State private var newMilestoneTitle = ""
     @State private var showPhotoSuggestionAlert = false
     @State private var milestonePendingCompletion: Milestone? = nil
     @State private var selectedMilestone: Milestone? = nil
     @State private var showTitleRequired = false
+    @State private var aiErrorMessage = ""
+    @State private var showAIErrorAlert = false
+    @State private var frozenMilestoneIDs: Set<UUID> = []
 
     @State private var partial: NodesData.PartiallyGenerated?
     @State private var isAnalyzing = false
@@ -307,14 +362,7 @@ struct RoadmapDetailView: View {
             "Never use slang language"
         }
     )
-
-    var remainingMilestoneSlots: Int {
-        max(0, maxMilestones - roadmap.milestones.count)
-    }
-
-    var hasReachedMilestoneLimit: Bool {
-        roadmap.milestones.count >= maxMilestones
-    }
+    private let aiContextMilestoneLimit = 12
 
     var themeColor: Color { Color.fromHex(roadmap.colorHex) }
     var completedCount: Int { roadmap.milestones.filter { $0.isCompleted }.count }
@@ -352,6 +400,10 @@ struct RoadmapDetailView: View {
         if completedCount == totalCount { return "You've completed all milestones!" }
 
         return "\(totalCount - completedCount) more to grow"
+    }
+
+    var sortedMilestones: [Milestone] {
+        milestoneSort(for: roadmap.milestones, freezeCompletionStatus: true)
     }
 
     var body: some View {
@@ -444,7 +496,7 @@ struct RoadmapDetailView: View {
 
                             Spacer()
 
-                            Text("\(roadmap.milestones.count)/\(maxMilestones)")
+                            Text("\(roadmap.milestones.count)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
 
@@ -461,12 +513,12 @@ struct RoadmapDetailView: View {
                                     )
                                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                             }
-                            .disabled(isAnalyzing || hasReachedMilestoneLimit || isGoalTitleEmpty)
+                            .disabled(isAnalyzing || isGoalTitleEmpty)
                         }
 
                         HStack(spacing: 10) {
                             TextField(
-                                hasReachedMilestoneLimit ? "Milestone limit reached" : "Add a new milestone...",
+                                "Add a new milestone...",
                                 text: $newMilestoneTitle
                             )
                             .textFieldStyle(PlainTextFieldStyle())
@@ -474,49 +526,20 @@ struct RoadmapDetailView: View {
                             .padding(.vertical, 14)
                             .background(Color.appCard)
                             .cornerRadius(14)
-                            .disabled(hasReachedMilestoneLimit || isGoalTitleEmpty)
+                            .disabled(isGoalTitleEmpty)
 
                             Button(action: addMilestone) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(colorScheme == .dark ? .black : .white)
                                     .frame(width: 48, height: 48)
-                                    .background(hasReachedMilestoneLimit ? Color.gray : themeColor)
+                                    .background(themeColor)
                                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
                             .disabled(
                                 newMilestoneTitle.trimmingCharacters(in: .whitespaces).isEmpty ||
-                                hasReachedMilestoneLimit ||
                                 isGoalTitleEmpty
                             )
-                        }
-
-                        if hasReachedMilestoneLimit {
-                            VStack(spacing: 10) {
-                                Text("This roadmap has reached the 20 milestone limit.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-
-                                Button {
-                                    createContinuationRoadmap()
-                                } label: {
-                                    HStack {
-                                        if isCreatingContinuation {
-                                            ProgressView()
-                                        }
-
-                                        Text(isCreatingContinuation ? "Creating..." : "Create \(continuationTitle())")
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .tint(themeColor)
-                                .disabled(isCreatingContinuation)
-                            }
-                            .padding()
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 
                         if roadmap.milestones.isEmpty {
@@ -527,7 +550,7 @@ struct RoadmapDetailView: View {
                                 .frame(maxWidth: .infinity, alignment: .center)
                         } else {
                             VStack(spacing: 12) {
-                                ForEach(roadmap.milestones) { milestone in
+                                ForEach(sortedMilestones) { milestone in
                                     EntryRowView(
                                         milestone: milestone,
                                         themeColor: themeColor,
@@ -535,8 +558,13 @@ struct RoadmapDetailView: View {
                                         onDelete: { deleteMilestone(milestone) },
                                         onRowTap: { selectedMilestone = milestone }
                                     )
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                                    ))
                                 }
                             }
+                            .animation(.easeInOut(duration: 0.2), value: sortedMilestones.count)
                         }
                     }
 
@@ -600,6 +628,13 @@ struct RoadmapDetailView: View {
             .background(Color.appBackground.ignoresSafeArea(edges: .top))
         }
         .toolbar(.hidden, for: .navigationBar)
+        .onAppear {
+            applySortedMilestonesToStore()
+        }
+        .onDisappear {
+            applySortedMilestonesToStore()
+            frozenMilestoneIDs.removeAll()
+        }
         .navigationDestination(item: $selectedMilestone) { milestone in
             EntryDetailView(entry: milestone)
         }
@@ -634,7 +669,7 @@ struct RoadmapDetailView: View {
                             .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                     }
 
-                Text("\(remainingMilestoneSlots) milestone slots remaining")
+                Text("AI can generate multiple milestones.")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
@@ -651,7 +686,7 @@ struct RoadmapDetailView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(themeColor)
-                .disabled(isAnalyzing || hasReachedMilestoneLimit)
+                .disabled(isAnalyzing)
 
                 Button("Cancel") {
                     showAIPromptSheet = false
@@ -662,6 +697,13 @@ struct RoadmapDetailView: View {
             }
             .padding()
             .presentationDetents([.medium, .large])
+        }
+        .alert("AI generation failed", isPresented: $showAIErrorAlert) {
+            Button("OK") {
+                showAIErrorAlert = false
+            }
+        } message: {
+            Text(aiErrorMessage)
         }
     }
 
@@ -696,15 +738,16 @@ struct RoadmapDetailView: View {
 
         note = roadmap.title
         note += roadmap.goalDescription.isEmpty ? "" : " and the goal description: \(roadmap.goalDescription)."
-        note += roadmap.milestones.isEmpty ? "" : " the following actionable items are currently in this roadmap, don't repeat them and analyze them so you can guess what the next few new nodes should be: " + roadmap.milestones.map(\.title).joined(separator: ", ") + "."
+        let contextMilestones = latestMilestonesForAIContext()
+        if !contextMilestones.isEmpty {
+            note += " the following recent actionable items are currently in this roadmap, don't repeat them and analyze them so you can guess what the next few new nodes should be: " + contextMilestones.map(\.title).joined(separator: ", ") + "."
+        }
 
         let cleanExtraPrompt = extraPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if !cleanExtraPrompt.isEmpty {
             note += " Extra user direction: \(cleanExtraPrompt)."
         }
-
-        note += " Generate no more than \(remainingMilestoneSlots) new milestones."
 
         do {
             print(note)
@@ -717,73 +760,103 @@ struct RoadmapDetailView: View {
                 partial = snapshot.content
             }
         } catch {
-            print("Streaming Failed \(error.localizedDescription)")
+            await showAIError(for: error)
+            return
         }
 
-        if let items = partial?.actionItems {
-            let limitedItems = items.compactMap({ $0 }).prefix(remainingMilestoneSlots)
-
-            for item in limitedItems {
-                let newMilestone = Milestone(title: item)
-                newMilestone.roadmap = roadmap
-                roadmap.milestones.append(newMilestone)
-            }
-
-            try? modelContext.save()
-        }
-    }
-
-    private func continuationTitle() -> String {
-        let baseTitle = roadmap.title.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if baseTitle.isEmpty {
-            return "New Roadmap Part 2"
+        guard let items = partial?.actionItems else {
+            await showAIError(for: NSError(domain: "Roadmap.AI", code: 0, userInfo: [NSLocalizedDescriptionKey: "No milestones were returned by the AI."]))
+            return
         }
 
-        return "\(baseTitle) I"
-    }
+        let parsedItems = items.compactMap { item in
+            item.trimmingCharacters(in: .whitespacesAndNewlines)
+        }.filter { !$0.isEmpty }
+        if parsedItems.isEmpty {
+            await showAIError(for: NSError(domain: "Roadmap.AI", code: 1, userInfo: [NSLocalizedDescriptionKey: "The AI returned no valid milestone text."]))
+            return
+        }
 
-    private func createContinuationRoadmap() {
-        guard !isCreatingContinuation else { return }
+        for item in parsedItems {
+            let newMilestone = Milestone(title: item)
+            newMilestone.roadmap = roadmap
+            roadmap.milestones.append(newMilestone)
+        }
 
-        isCreatingContinuation = true
-
-        let newRoadmap = Roadmap(
-            title: continuationTitle(),
-            goalDescription: roadmap.goalDescription,
-            colorHex: roadmap.colorHex
-        )
-
-        modelContext.insert(newRoadmap)
         try? modelContext.save()
+    }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            if !navigationPath.isEmpty {
-                navigationPath.removeLast()
-            }
-
-            navigationPath.append(newRoadmap)
-            isCreatingContinuation = false
+    @MainActor
+    private func showAIError(for error: Error) {
+        let message = error.localizedDescription.lowercased()
+        if message.contains("unsafe") || message.contains("safety") {
+            aiErrorMessage = "The AI blocked this request for safety reasons. Please don't put unsafe words and rephrase your roadmap title / description / milestones / prompt."
+        } else {
+            aiErrorMessage = "Couldn’t complete milestone generation. \(error.localizedDescription)"
         }
+        showAIErrorAlert = true
     }
 
     private func toggleMilestone(_ milestone: Milestone) {
-        withAnimation {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            let wasCompleted = milestone.isCompleted
+
             if milestone.isCompleted {
                 milestone.isCompleted = false
                 milestone.completedAt = nil
+                frozenMilestoneIDs.remove(milestone.id)
             }
             else {
                 milestone.isCompleted = true
                 milestone.completedAt = Date()
+                if !wasCompleted {
+                    frozenMilestoneIDs.insert(milestone.id)
+                }
             }
 
             try? modelContext.save()
         }
     }
 
+    private func milestoneSort(for milestones: [Milestone], freezeCompletionStatus: Bool) -> [Milestone] {
+        milestones.sorted {
+            let leftPriority = sortPriority(for: $0, freezeCompletionStatus: freezeCompletionStatus)
+            let rightPriority = sortPriority(for: $1, freezeCompletionStatus: freezeCompletionStatus)
+
+            if leftPriority != rightPriority {
+                return leftPriority < rightPriority
+            }
+
+            if $0.createdAt != $1.createdAt {
+                return $0.createdAt < $1.createdAt
+            }
+
+            return $0.id.uuidString < $1.id.uuidString
+        }
+    }
+
+    private func sortPriority(for milestone: Milestone, freezeCompletionStatus: Bool) -> Int {
+        if freezeCompletionStatus && frozenMilestoneIDs.contains(milestone.id) {
+            return 0
+        }
+
+        return milestone.isCompleted ? 1 : 0
+    }
+
+    private func latestMilestonesForAIContext() -> [Milestone] {
+        roadmap.milestones
+            .sorted { $0.createdAt < $1.createdAt }
+            .suffix(aiContextMilestoneLimit)
+            .map { $0 }
+    }
+
+    private func applySortedMilestonesToStore() {
+        roadmap.milestones = milestoneSort(for: roadmap.milestones, freezeCompletionStatus: false)
+        try? modelContext.save()
+    }
+
     private func deleteMilestone(_ milestone: Milestone) {
-        withAnimation {
+        withAnimation(.easeInOut(duration: 0.2)) {
             roadmap.milestones.removeAll { $0.id == milestone.id }
             modelContext.delete(milestone)
 
@@ -844,6 +917,10 @@ struct EntryRowView: View {
         .padding(.horizontal, 16)
         .padding(.top, 14)
         .padding(.bottom, 24)
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+            removal: .opacity.combined(with: .scale(scale: 0.98))
+        ))
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.appCard)
