@@ -36,7 +36,7 @@ struct CameraScreen: View {
                         }
                     }
                     .aspectRatio(3/4, contentMode: .fit)
-                    .frame(maxWidth: min(UIScreen.main.bounds.width - 40, 440 * 3/4))
+                    .frame(maxWidth: min(UIScreen.current!.bounds.width - 40, 440 * 3/4))
                     .frame(maxWidth: .infinity)
                     .background(
                         ZStack {

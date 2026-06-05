@@ -36,7 +36,7 @@ struct RecollectDetailView: View {
     
     private var roadmapsForDay: [Roadmap] {
         let uniqueRoadmaps = Set(currentDayMilestones.compactMap { $0.roadmap })
-        return Array(uniqueRoadmaps).sorted { ($0.title ?? "") < ($1.title ?? "") }
+        return Array(uniqueRoadmaps).sorted { ($0.title) < ($1.title) }
     }
     
     private var milestonesForSelectedRoadmap: [Milestone] {
@@ -57,7 +57,7 @@ struct RecollectDetailView: View {
                                     Button(action: {
                                         selectedRoadmapID = roadmap.persistentModelID
                                     }) {
-                                        Text(roadmap.title ?? "Unknown")
+                                        Text(roadmap.title)
                                             .font(.subheadline)
                                             .fontWeight(.medium)
                                             .padding(.vertical, 8)

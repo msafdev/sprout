@@ -632,6 +632,12 @@ struct RoadmapDetailView: View {
             applySortedMilestonesToStore()
         }
         .onDisappear {
+            if let ctx = roadmap.modelContext, !roadmap.isDeleted {
+                if roadmap.title.trimmingCharacters(in: .whitespaces).isEmpty {
+                    ctx.delete(roadmap)
+                    try? ctx.save()
+                }
+            }
             applySortedMilestonesToStore()
             frozenMilestoneIDs.removeAll()
         }
@@ -760,12 +766,12 @@ struct RoadmapDetailView: View {
                 partial = snapshot.content
             }
         } catch {
-            await showAIError(for: error)
+            showAIError(for: error)
             return
         }
 
         guard let items = partial?.actionItems else {
-            await showAIError(for: NSError(domain: "Roadmap.AI", code: 0, userInfo: [NSLocalizedDescriptionKey: "No milestones were returned by the AI."]))
+            showAIError(for: NSError(domain: "Roadmap.AI", code: 0, userInfo: [NSLocalizedDescriptionKey: "No milestones were returned by the AI."]))
             return
         }
 
@@ -773,7 +779,7 @@ struct RoadmapDetailView: View {
             item.trimmingCharacters(in: .whitespacesAndNewlines)
         }.filter { !$0.isEmpty }
         if parsedItems.isEmpty {
-            await showAIError(for: NSError(domain: "Roadmap.AI", code: 1, userInfo: [NSLocalizedDescriptionKey: "The AI returned no valid milestone text."]))
+            showAIError(for: NSError(domain: "Roadmap.AI", code: 1, userInfo: [NSLocalizedDescriptionKey: "The AI returned no valid milestone text."]))
             return
         }
 

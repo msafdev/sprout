@@ -29,6 +29,9 @@ struct CustomTabBar: View {
                         // 1. Force screen switch to the Roadmap tab container
                         selectedTab = 2
                         
+                        // Clear the navigation path to prevent stacking multiple add screens
+                        navigationPath = NavigationPath()
+                        
                         // 2. Instantly push the detail view over the stack root
                         navigationPath.append(roadmap)
                     }) {
@@ -47,6 +50,9 @@ struct CustomTabBar: View {
                         selectedTab: $selectedTab,
                         systemName: tabSystemImage(for: index),
                         onTap: {
+                            if index == 2 {
+                                navigationPath = NavigationPath()
+                            }
                             selectedTab = index
                             onTabTapped(index)
                         }

@@ -65,7 +65,7 @@ struct CameraForRoadmap: View {
     
     private var viewFinderContainer: some View {
         // 👇 FIXED: Explicit CGFloats prevent the compiler from choking on the min() expression
-        let screenWidth = UIScreen.main.bounds.width
+        let screenWidth = UIScreen.current!.bounds.width
         let maxCardWidth = min(screenWidth - 40, CGFloat(440 * 3) / 4.0)
         
         return Group {
