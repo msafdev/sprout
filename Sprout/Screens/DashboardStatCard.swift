@@ -59,8 +59,10 @@ struct DashboardStatCard: View {
 
             LinearGradient(
                 colors: colorScheme == .dark
-                    ? [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")]
-                    : [Color.fromHex("#BEC740"), Color.fromHex("#73741A")],
+                ? [Color.fromHex("#73741A"),
+                   Color.fromHex("#BEC740")]
+                : [Color.fromHex("#8F8E2C"),
+                   Color.fromHex("#C7C670")],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

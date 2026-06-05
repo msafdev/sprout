@@ -44,8 +44,8 @@ struct RecollectScreen: View {
                         
                         // Weekly / Monthly Stats
                         HStack(spacing: 12) {
-                            StatsCard(title: "This week", count: weekCount, icon: "drop.fill", colors: ["#5F6F52", "#A9B388"])
-                            StatsCard(title: "This month", count: monthCount, icon: "leaf.fill", colors: ["#8F8E2C", "#C7C670"])
+                            StatsCard(title: "This week", count: weekCount, imageName: "card week")
+                            StatsCard(title: "This month", count: monthCount, imageName: "card month")
                         }
                         
                         // Calendar
@@ -89,22 +89,41 @@ struct RecollectScreen: View {
 struct StatsCard: View {
     let title: String
     let count: Int
-    let icon: String
-    let colors: [String]
-    
+    let imageName: String
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 36) {
-            HStack(alignment: .top) {
-                Image(systemName: icon).font(.system(size: 28)).foregroundColor(.white)
+        ZStack(alignment: .bottomTrailing) {
+            LinearGradient(
+                colors: colorScheme == .dark
+                    ? [Color.fromHex("#73741A"), Color.fromHex("#BEC740")]
+                    : [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Image(imageName)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 110)
+                .foregroundStyle(.white.opacity(0.60))
+                .offset(x: 0, y: 8)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                Text("Done \(count)")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.85))
                 Spacer()
             }
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.system(size: 18, weight: .bold, design: .rounded)).foregroundColor(.white)
-                Text("\(count) done").font(.system(size: 15, weight: .medium, design: .rounded)).foregroundColor(.white.opacity(0.85))
-            }
+            .padding(20)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .padding(20).frame(maxWidth: .infinity)
-        .background(LinearGradient(colors: colors.map { Color.fromHex($0) }, startPoint: .topLeading, endPoint: .bottomTrailing))
+        .frame(maxWidth: .infinity)
+        .frame(height: 110)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.white.opacity(0.25), lineWidth: 1.5))
     }
