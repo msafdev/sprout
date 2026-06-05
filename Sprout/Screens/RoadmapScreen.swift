@@ -64,65 +64,18 @@ struct RoadmapScreen: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
 
-                    HStack(alignment: .center, spacing: 6) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Image("animation 5")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 60, height: 60)
-                            Text("Sprouted")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                        VStack(spacing: 0) {
-                            Text("\(sproutedMilestones)")
-                                .font(.system(size: 30, weight: .bold))
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(width: 40, height: 56, alignment: .center)
-
-                        Rectangle()
-                            .fill(Color.white.opacity(0.4))
-                            .frame(width: 1, height: 56)
-
-                        VStack(spacing: 0) {
-                            Text("\(milestonesToSprout)")
-                                .font(.system(size: 30, weight: .bold))
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(width: 40, height: 56, alignment: .center)
-
-                        VStack(alignment: .trailing, spacing: 8) {
-                            Image("animation 1")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 60, height: 60)
-                            Text("To Sprout")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 32)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                    HStack(alignment: .top, spacing: 12) {
+                        DashboardStatCard(
+                            iconName: "animation 1",
+                            value: milestonesToSprout,
+                            label: "Planted"
                         )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
-                    )
-                    .cornerRadius(20)
+                        DashboardStatCard(
+                            iconName: "animation 5",
+                            value: sproutedMilestones,
+                            label: "Sprouted"
+                        )
+                    }
                     .padding(.horizontal, 20)
 
                     if roadmaps.isEmpty {
@@ -182,7 +135,55 @@ struct RoadmapScreen: View {
     }
 }
 
-// MARK: - Stat Views
+// MARK: - Dashboard Stat Card
+struct DashboardStatCard: View {
+    let iconName: String
+    let value: Int
+    let label: String
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: -8) {
+                Text(label)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                Image(iconName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(.white)
+                    .scaleEffect(2.0)
+                    .offset(y: -5)
+            }
+            Spacer()
+
+            Text("\(value)")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 18)
+        .frame(maxWidth: .infinity, maxHeight: 80)
+        .background(
+            LinearGradient(
+                colors: [Color.fromHex("#8F8E2C"), Color.fromHex("#C7C670")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+}
+
+// MARK: - Legacy Stat View (unused)
 struct StatItemView: View {
     let label: String
     let value: String
@@ -198,12 +199,9 @@ struct StatItemView: View {
             Text(value)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundColor(colorScheme == .dark ? .white : .black)
-            Text(label)
-                .font(.caption)
+            Text(label).font(.caption)
                 .foregroundColor(colorScheme == .dark ? .white.opacity(0.9) : .black.opacity(0.7))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        }.frame(maxWidth: .infinity).padding(.vertical, 16)
     }
 }
 
@@ -496,7 +494,7 @@ struct RoadmapDetailView: View {
 
                             Spacer()
 
-                            Text("\(roadmap.milestones.count)")
+                            Text("\(completedCount) / \(totalCount)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
 

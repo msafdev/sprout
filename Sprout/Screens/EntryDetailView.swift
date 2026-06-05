@@ -134,19 +134,19 @@ struct EntryDetailView: View {
                                 .fontWeight(.bold)
                                 .foregroundColor(.gray)
 
-                            HStack(spacing: 16) {
+                            HStack(spacing: 0) {
                                 ForEach(1...5, id: \.self) { level in
+                                    let isSelected = entry.emotionLevel == level
                                     Button(action: {
                                         entry.emotionLevel = (entry.emotionLevel == level) ? 0 : level
                                         try? modelContext.save()
                                     }) {
-                                        emotionImage(for: level)
-                                            .scaleEffect(entry.emotionLevel == level ? 1.2 : 1.0)
-                                            .opacity(entry.emotionLevel == level ? 1.0 : 0.45)
+                                        emotionImage(for: level, isSelected: isSelected)
+                                            .scaleEffect(isSelected ? 1.2 : 1.0)
                                             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: entry.emotionLevel)
+                                            .frame(maxWidth: .infinity)
                                     }
                                 }
-                                Spacer()
                             }
                         }
                     }
@@ -264,15 +264,13 @@ struct EntryDetailView: View {
                 )
     }
     
-    private func emotionImage(for level: Int, isSelected: Bool = false) -> some View {
+    private func emotionImage(for level: Int, isSelected: Bool) -> some View {
         let moodAssets = ["s_angry", "s_confused", "s_sad", "s_flat", "s_happy"]
         let index = max(0, min(level - 1, moodAssets.count - 1))
         return Image(moodAssets[index])
             .resizable()
             .scaledToFit()
             .frame(width: 40, height: 40)
-            .scaleEffect(isSelected ? 1.2 : 1.0)
             .opacity(isSelected ? 1.0 : 0.45)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
     }
 }
