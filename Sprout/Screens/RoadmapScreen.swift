@@ -31,58 +31,7 @@ struct RoadmapScreen: View {
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            ZStack {
-                AppGradientBackground()
-
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Roadmap")
-                                .font(.system(size: 34, weight: .bold))
-                                .foregroundColor(.primary.opacity(0.85))
-                            Text("Track your progress toward your dreams")
-                                .font(.subheadline)
-                                .foregroundColor(.primary.opacity(0.8))
-                        }
-
-                        Spacer()
-
-                        Button(action: {
-                            let roadmap = Roadmap(title: "", goalDescription: "", colorHex: "#9F9E32")
-                            modelContext.insert(roadmap)
-                            try? modelContext.save()
-                            navigationPath.append(roadmap)
-                        }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(Color(UIColor.systemBackground))
-                                .frame(width: 44, height: 44)
-                                .background(Color.appAccent)
-                                .clipShape(Circle())
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-
-                    HStack(alignment: .top, spacing: 12) {
-                        DashboardStatCard(
-                            iconName: "animation 1",
-                            value: milestonesToSprout,
-                            label: "Planted",
-                            scaleX: 2.5,
-                            scaleY: 2.0,
-                            offsetY: -7.5
-                        )
-                        DashboardStatCard(
-                            iconName: "animation 5",
-                            value: sproutedMilestones,
-                            label: "Sprouted",
-                            scaleX: 2.0,
-                            scaleY: 2.0,
-                            offsetY: 5
-                        )
-                    }
-                    .padding(.horizontal, 20)
+            Group {
 
                     if roadmaps.isEmpty {
                         VStack {
@@ -97,6 +46,26 @@ struct RoadmapScreen: View {
                     } else {
                         ScrollView {
                             let columns = [GridItem(.flexible()), GridItem(.flexible())]
+                            
+                            HStack(alignment: .top, spacing: 12) {
+                                DashboardStatCard(
+                                    iconName: "animation 1",
+                                    value: milestonesToSprout,
+                                    label: "Planted",
+                                    scaleX: 2.5,
+                                    scaleY: 2.0,
+                                    offsetY: -7.5
+                                )
+                                DashboardStatCard(
+                                    iconName: "animation 5",
+                                    value: sproutedMilestones,
+                                    label: "Sprouted",
+                                    scaleX: 2.0,
+                                    scaleY: 2.0,
+                                    offsetY: 5
+                                )
+                            }
+                            .padding(.horizontal, 20)
 
                             LazyVGrid(columns: columns, spacing: 20) {
                                 ForEach(roadmaps) { roadmap in
@@ -109,7 +78,25 @@ struct RoadmapScreen: View {
                             .padding(.horizontal, 20)
                             .padding(.bottom, 20)
                             .padding(.top, 4)
+                            
+                            Spacer().frame(height: 60)
                         }
+                    }
+            }
+            .background(AppGradientBackground())
+            .navigationTitle("Roadmap")
+            .navigationSubtitle("Track your progress toward your dreams")
+            .toolbar{
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        let roadmap = Roadmap(title: "", goalDescription: "", colorHex: "#9F9E32")
+                        modelContext.insert(roadmap)
+                        try? modelContext.save()
+                        navigationPath.append(roadmap)
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 24, weight: .heavy))
+                            .foregroundColor(Color.appAccent)
                     }
                 }
             }

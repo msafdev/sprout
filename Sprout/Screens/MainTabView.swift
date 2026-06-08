@@ -12,20 +12,23 @@ struct MainTabView: View {
     @State private var roadmapPath = NavigationPath()
 
     var body: some View {
-        Group {
-            // Screen Contents
-            switch selectedTab {
-            case 0:
-                RecollectScreen()
-            case 2:
-                // 👇 This MUST be the root screen container carrying the path binding
-                RoadmapScreen(navigationPath: $roadmapPath)
-            default:
-                RoadmapScreen(navigationPath: $roadmapPath)
+        ZStack(alignment: .bottom) {
+            // MARK: - Layer 1: Screen Contents
+            // Your navigation stacks sit in the background and take up the full screen
+            Group {
+                switch selectedTab {
+                case 0:
+                    RecollectScreen()
+                case 2:
+                    RoadmapScreen(navigationPath: $roadmapPath)
+                default:
+                    RoadmapScreen(navigationPath: $roadmapPath)
+                }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .safeAreaInset(edge: .bottom) {
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // MARK: - Layer 2: Floating Tab Bar
+            // This sits on top, totally independent of the navigation stack's layout rules
             CustomTabBar(
                 selectedTab: $selectedTab,
                 navigationPath: $roadmapPath
