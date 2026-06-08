@@ -51,6 +51,28 @@ struct RoadmapScreen: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             Group {
+                ScrollView {
+                    let columns = [GridItem(.flexible()), GridItem(.flexible())]
+                    
+                    HStack(alignment: .top, spacing: 12) {
+                        DashboardStatCard(
+                            iconName: "animation 1",
+                            value: milestonesToSprout,
+                            label: "Planted",
+                            scaleX: 2.5,
+                            scaleY: 2.0,
+                            offsetY: -5
+                        )
+                        DashboardStatCard(
+                            iconName: "animation 5",
+                            value: sproutedMilestones,
+                            label: "Sprouted",
+                            scaleX: 2.0,
+                            scaleY: 2.0,
+                            offsetY: 5
+                        )
+                    }
+                    .padding(.horizontal, 20)
 
                     if roadmaps.isEmpty {
                         VStack {
@@ -63,28 +85,6 @@ struct RoadmapScreen: View {
                             Spacer()
                         }
                     } else {
-                        ScrollView {
-                            let columns = [GridItem(.flexible()), GridItem(.flexible())]
-                            
-                            HStack(alignment: .top, spacing: 12) {
-                                DashboardStatCard(
-                                    iconName: "animation 1",
-                                    value: milestonesToSprout,
-                                    label: "Planted",
-                                    scaleX: 2.5,
-                                    scaleY: 2.0,
-                                    offsetY: -7.5
-                                )
-                                DashboardStatCard(
-                                    iconName: "animation 5",
-                                    value: sproutedMilestones,
-                                    label: "Sprouted",
-                                    scaleX: 2.0,
-                                    scaleY: 2.0,
-                                    offsetY: 5
-                                )
-                            }
-                            .padding(.horizontal, 20)
 
                             // 👇 Use the sliced array instead of the full array
                                                         LazyVGrid(columns: columns, spacing: 20) {
@@ -137,12 +137,13 @@ struct RoadmapScreen: View {
                             
                             Spacer().frame(height: 80)
                         }
-                        .onChange(of: roadmaps.count) { _, _ in
-                                // If items are deleted and we are now out of bounds, step back a page
-                                if currentPage >= totalPages {
-                                    currentPage = max(0, totalPages - 1)
-                                }
-                            }
+                        
+                    }
+                .onChange(of: roadmaps.count) { _, _ in
+                        // If items are deleted and we are now out of bounds, step back a page
+                        if currentPage >= totalPages {
+                            currentPage = max(0, totalPages - 1)
+                        }
                     }
             }
             .background(AppGradientBackground())
