@@ -23,7 +23,7 @@ struct DashboardStatCard: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .center, spacing: -8) {
                 Text(label)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .lineLimit(2)
                 Image(iconName)

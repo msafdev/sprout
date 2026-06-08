@@ -28,6 +28,25 @@ struct RoadmapScreen: View {
     var milestonesToSprout: Int {
         max(0, totalMilestones - sproutedMilestones)
     }
+    
+    // Add this with your other @State variables
+        @State private var currentPage: Int = 0
+        private let itemsPerPage = 6
+
+        // 👇 1. Calculate how many pages we need
+        var totalPages: Int {
+            max(1, Int(ceil(Double(roadmaps.count) / Double(itemsPerPage))))
+        }
+
+        // 👇 2. Slice the array to only return max 8 items for the current page
+        var paginatedRoadmaps: [Roadmap] {
+            let start = currentPage * itemsPerPage
+            let end = min(start + itemsPerPage, roadmaps.count)
+            
+            // Safety check in case items are deleted
+            if start >= roadmaps.count { return [] }
+            return Array(roadmaps[start..<end])
+        }
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -67,20 +86,63 @@ struct RoadmapScreen: View {
                             }
                             .padding(.horizontal, 20)
 
-                            LazyVGrid(columns: columns, spacing: 20) {
-                                ForEach(roadmaps) { roadmap in
-                                    NavigationLink(value: roadmap) {
-                                        RoadmapCardView(roadmap: roadmap)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
+                            // 👇 Use the sliced array instead of the full array
+                                                        LazyVGrid(columns: columns, spacing: 20) {
+                                                            ForEach(paginatedRoadmaps) { roadmap in
+                                                                NavigationLink(value: roadmap) {
+                                                                    RoadmapCardView(roadmap: roadmap)
+                                                                }
+                                                                .buttonStyle(PlainButtonStyle())
+                                                            }
+                                                        }
+                                                        .padding(.horizontal, 20)
+                                                        // Smoothly animate the card transitions when changing pages
+                                                        .animation(.snappy, value: currentPage)
+                                                        
+                                                        // 👇 3. The Pagination Controls
+                                                        if totalPages > 1 {
+                                                            HStack(spacing: 24) {
+                                                                Button(action: {
+                                                                    if currentPage > 0 { currentPage -= 1 }
+                                                                }) {
+                                                                    Image(systemName: "chevron.left")
+                                                                        .font(.system(size: 16, weight: .bold))
+                                                                        .foregroundColor(currentPage > 0 ? .primary : .primary.opacity(0.2))
+                                                                        .frame(width: 44, height: 44)
+                                                                        .background(Color.primary.opacity(0.05))
+                                                                        .clipShape(Circle())
+                                                                }
+                                                                .disabled(currentPage == 0)
+                                                                
+                                                                // Custom visual dots or text
+                                                                Text("Page \(currentPage + 1) of \(totalPages)")
+                                                                    .font(.subheadline)
+                                                                    .fontWeight(.semibold)
+                                                                    .foregroundColor(.secondary)
+                                                                
+                                                                Button(action: {
+                                                                    if currentPage < totalPages - 1 { currentPage += 1 }
+                                                                }) {
+                                                                    Image(systemName: "chevron.right")
+                                                                        .font(.system(size: 16, weight: .bold))
+                                                                        .foregroundColor(currentPage < totalPages - 1 ? .primary : .primary.opacity(0.2))
+                                                                        .frame(width: 44, height: 44)
+                                                                        .background(Color.primary.opacity(0.05))
+                                                                        .clipShape(Circle())
+                                                                }
+                                                                .disabled(currentPage == totalPages - 1)
+                                                            }
+                                                            .padding(.top, 10)
+                                                        }
+                            
+                            Spacer().frame(height: 80)
+                        }
+                        .onChange(of: roadmaps.count) { _, _ in
+                                // If items are deleted and we are now out of bounds, step back a page
+                                if currentPage >= totalPages {
+                                    currentPage = max(0, totalPages - 1)
                                 }
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
-                            .padding(.top, 4)
-                            
-                            Spacer().frame(height: 60)
-                        }
                     }
             }
             .background(AppGradientBackground())
@@ -103,28 +165,7 @@ struct RoadmapScreen: View {
             .navigationDestination(for: Roadmap.self) { roadmap in
                 RoadmapDetailView(roadmap: roadmap, navigationPath: $navigationPath)
             }
-            .onAppear {
-                seedInitialRoadmapsIfNeeded()
-            }
         }
-    }
-
-    private func seedInitialRoadmapsIfNeeded() {
-        guard roadmaps.isEmpty else { return }
-
-        let roadmap = Roadmap(
-            title: "Become a Confident Visual Storyteller",
-            goalDescription: "Capture everyday scenes with intention, review results, and refine every shot.",
-            colorHex: "#9F9E32"
-        )
-        roadmap.milestones = [
-            Milestone(title: "Assess current camera skills and setup"),
-            Milestone(title: "Practice three photo compositions with available light"),
-            Milestone(title: "Review selected shots and identify improvement areas")
-        ]
-
-        modelContext.insert(roadmap)
-        try? modelContext.save()
     }
 }
 
