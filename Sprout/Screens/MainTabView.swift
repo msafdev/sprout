@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @State private var selectedTab: Int = 0
+    @State private var selectedTab: Int = 2
     @State private var roadmapPath = NavigationPath()
 
     var body: some View {
